@@ -80,8 +80,14 @@ Bot'u kullanabilmek için özel kanalımıza katılma isteği göndermelisiniz.
       const joinRequest = await Database.getJoinRequest(userId, Number.parseInt(mainChannelId))
 
       if (joinRequest) {
-        // İstek varsa direkt menüyü göster
+        // İstek varsa ARTIK menüyü göster ve hoş geldin de
         await Database.updateUserMembership(userId, true)
+
+        const welcomeMessage = `✅ <b>Katılma isteğiniz onaylandı!</b>
+
+Artık @borsaozelderinlik_bot'u kullanabilirsiniz!`
+
+        await this.bot.sendMessage(chatId, welcomeMessage)
         await this.showMainMenu(userId, chatId)
       } else {
         const inviteLink = await Database.getSetting("invite_link")
@@ -113,9 +119,7 @@ Bot'u kullanabilmek için özel kanalımıza katılma isteği göndermelisiniz.
 
   // Tek sabit ana menü
   async showMainMenu(userId: number, chatId: number) {
-    const welcomeMessage = `✅ <b>Hoş Geldiniz!</b>
-
-🎯 <b>Borsa Özel Derinlik Bot</b> - Profesyonel analiz araçlarınız hazır!
+    const welcomeMessage = `🎯 <b>Borsa Özel Derinlik Bot</b>
 
 🔍 <b>Komutlar:</b>
 • /derinlik HISSE – Derinlik analizi
