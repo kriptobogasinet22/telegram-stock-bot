@@ -13,7 +13,7 @@ export class ImageGenerator {
     try {
       console.log(`Generating PNG for ${data.symbol}`)
 
-      // SVG'yi oluştur
+      // SVG'yi oluştur - Web safe fontlar kullan
       const svgContent = await this.generateDepthSVG(data)
 
       // SVG'yi PNG'ye çevir
@@ -22,8 +22,8 @@ export class ImageGenerator {
       return pngBuffer
     } catch (error) {
       console.error("Error generating PNG depth image:", error)
-      // Fallback: Basit PNG oluştur
-      return await this.createFallbackPNG(data)
+      // Fallback: Canvas ile basit PNG oluştur
+      return await this.createCanvasPNG(data)
     }
   }
 
@@ -33,6 +33,7 @@ export class ImageGenerator {
       const changeColor = data.changePercent >= 0 ? "#00ff88" : "#ff4444"
       const changeSign = data.changePercent >= 0 ? "+" : ""
 
+      // Web safe fontlar ve daha büyük font boyutları kullan
       let svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="500" height="700" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -48,15 +49,60 @@ export class ImageGenerator {
       <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#00d4ff" flood-opacity="0.3"/>
     </filter>
     <style>
-      .title-text { font-family: 'Courier New', monospace; font-weight: bold; fill: white; text-anchor: middle; }
-      .price-text { font-family: 'Courier New', monospace; font-weight: bold; fill: white; text-anchor: middle; }
-      .change-text { font-family: 'Courier New', monospace; font-weight: bold; text-anchor: middle; }
-      .header-text { font-family: 'Courier New', monospace; font-weight: bold; fill: #00d4ff; text-anchor: middle; }
-      .bid-text { font-family: 'Courier New', monospace; font-weight: bold; fill: #00ff88; text-anchor: middle; }
-      .ask-text { font-family: 'Courier New', monospace; font-weight: bold; fill: #ff4444; text-anchor: middle; }
-      .neutral-text { font-family: 'Courier New', monospace; font-weight: bold; fill: white; text-anchor: middle; }
-      .footer-text { font-family: 'Courier New', monospace; font-weight: bold; fill: white; }
-      .brand-text { font-family: 'Courier New', monospace; font-weight: bold; fill: #00d4ff; text-anchor: middle; }
+      .title-text { 
+        font-family: Arial, Helvetica, sans-serif; 
+        font-weight: bold; 
+        fill: white; 
+        text-anchor: middle; 
+        font-size: 24px;
+      }
+      .price-text { 
+        font-family: Arial, Helvetica, sans-serif; 
+        font-weight: bold; 
+        fill: white; 
+        text-anchor: middle; 
+        font-size: 18px;
+      }
+      .change-text { 
+        font-family: Arial, Helvetica, sans-serif; 
+        font-weight: bold; 
+        text-anchor: middle; 
+        font-size: 14px;
+      }
+      .header-text { 
+        font-family: Arial, Helvetica, sans-serif; 
+        font-weight: bold; 
+        fill: #00d4ff; 
+        text-anchor: middle; 
+        font-size: 12px;
+      }
+      .bid-text { 
+        font-family: Arial, Helvetica, sans-serif; 
+        font-weight: bold; 
+        fill: #00ff88; 
+        text-anchor: middle; 
+        font-size: 11px;
+      }
+      .ask-text { 
+        font-family: Arial, Helvetica, sans-serif; 
+        font-weight: bold; 
+        fill: #ff4444; 
+        text-anchor: middle; 
+        font-size: 11px;
+      }
+      .footer-text { 
+        font-family: Arial, Helvetica, sans-serif; 
+        font-weight: bold; 
+        fill: white; 
+        font-size: 12px;
+      }
+      .brand-text { 
+        font-family: Arial, Helvetica, sans-serif; 
+        font-weight: bold; 
+        fill: #00d4ff; 
+        text-anchor: middle; 
+        font-size: 10px;
+      }
     </style>
   </defs>
   
@@ -71,24 +117,24 @@ export class ImageGenerator {
   
   <!-- Bot Brand -->
   <rect x="350" y="35" width="110" height="25" fill="rgba(0,0,0,0.8)" stroke="#00d4ff" stroke-width="2" rx="12"/>
-  <text x="405" y="52" class="brand-text" font-size="12">🤖 @BorsaBot</text>
+  <text x="405" y="50" class="brand-text">BorsaBot</text>
   
   <!-- Stock Symbol -->
-  <text x="250" y="65" class="title-text" font-size="24">${data.symbol}</text>
+  <text x="250" y="70" class="title-text">${data.symbol}</text>
   
   <!-- Price Info -->
-  <text x="180" y="95" class="price-text" font-size="18">${data.price.toFixed(2)}₺</text>
-  <rect x="280" y="78" width="80" height="22" fill="rgba(${data.changePercent >= 0 ? "0,255,136" : "255,68,68"},0.2)" stroke="${changeColor}" stroke-width="2" rx="6"/>
-  <text x="320" y="93" class="change-text" font-size="14" fill="${changeColor}">${changeSign}${data.changePercent.toFixed(2)}%</text>
+  <text x="180" y="100" class="price-text">${data.price.toFixed(2)} TL</text>
+  <rect x="280" y="82" width="80" height="22" fill="rgba(${data.changePercent >= 0 ? "0,255,136" : "255,68,68"},0.2)" stroke="${changeColor}" stroke-width="2" rx="6"/>
+  <text x="320" y="97" class="change-text" fill="${changeColor}">${changeSign}${data.changePercent.toFixed(2)}%</text>
   
   <!-- Table Header -->
   <rect x="40" y="130" width="420" height="35" fill="rgba(52,73,94,0.8)" stroke="#00d4ff" stroke-width="2" rx="6"/>
-  <text x="70" y="152" class="header-text" font-size="12">EMİR</text>
-  <text x="140" y="152" class="header-text" font-size="12">ADET</text>
-  <text x="210" y="152" class="header-text" font-size="12">ALIŞ</text>
-  <text x="290" y="152" class="header-text" font-size="12">SATIŞ</text>
-  <text x="360" y="152" class="header-text" font-size="12">ADET</text>
-  <text x="430" y="152" class="header-text" font-size="12">EMİR</text>
+  <text x="70" y="152" class="header-text">EMIR</text>
+  <text x="140" y="152" class="header-text">ADET</text>
+  <text x="210" y="152" class="header-text">ALIS</text>
+  <text x="290" y="152" class="header-text">SATIS</text>
+  <text x="360" y="152" class="header-text">ADET</text>
+  <text x="430" y="152" class="header-text">EMIR</text>
   
   <!-- Table Body Background -->
   <rect x="40" y="165" width="420" height="400" fill="rgba(0,0,0,0.4)" stroke="#00d4ff" stroke-width="2" rx="0 0 6 6"/>
@@ -109,17 +155,17 @@ export class ImageGenerator {
         // Bid data
         if (bid) {
           svg += `
-  <text x="70" y="${yPos + 3}" class="bid-text" font-size="11">${i + 1}</text>
-  <text x="140" y="${yPos + 3}" class="bid-text" font-size="11">${this.formatNumber(bid.quantity)}</text>
-  <text x="210" y="${yPos + 3}" class="bid-text" font-size="11">${bid.price.toFixed(2)}</text>`
+  <text x="70" y="${yPos + 3}" class="bid-text">${i + 1}</text>
+  <text x="140" y="${yPos + 3}" class="bid-text">${this.formatNumber(bid.quantity)}</text>
+  <text x="210" y="${yPos + 3}" class="bid-text">${bid.price.toFixed(2)}</text>`
         }
 
         // Ask data
         if (ask) {
           svg += `
-  <text x="290" y="${yPos + 3}" class="ask-text" font-size="11">${ask.price.toFixed(2)}</text>
-  <text x="360" y="${yPos + 3}" class="ask-text" font-size="11">${this.formatNumber(ask.quantity)}</text>
-  <text x="430" y="${yPos + 3}" class="ask-text" font-size="11">${i + 1}</text>`
+  <text x="290" y="${yPos + 3}" class="ask-text">${ask.price.toFixed(2)}</text>
+  <text x="360" y="${yPos + 3}" class="ask-text">${this.formatNumber(ask.quantity)}</text>
+  <text x="430" y="${yPos + 3}" class="ask-text">${i + 1}</text>`
         }
       }
 
@@ -127,10 +173,10 @@ export class ImageGenerator {
   
   <!-- Footer -->
   <rect x="30" y="620" width="440" height="50" fill="url(#headerGradient)" rx="8" filter="url(#shadow)"/>
-  <text x="50" y="645" class="footer-text" font-size="16">${data.symbol} Piyasa Derinliği</text>
-  <text x="50" y="660" class="footer-text" font-size="12">📊 25 kademe analizi</text>
-  <text x="420" y="645" class="footer-text" font-size="14" text-anchor="end">${timeText.split(" ")[1]}</text>
-  <text x="420" y="660" class="footer-text" font-size="12" text-anchor="end">@BorsaAnaliz_Bot</text>
+  <text x="50" y="645" class="footer-text">${data.symbol} Piyasa Derinligi</text>
+  <text x="50" y="660" class="footer-text">25 kademe analizi</text>
+  <text x="420" y="645" class="footer-text" text-anchor="end">${timeText.split(" ")[1]}</text>
+  <text x="420" y="660" class="footer-text" text-anchor="end">BorsaAnaliz Bot</text>
   
 </svg>`
 
@@ -141,104 +187,113 @@ export class ImageGenerator {
     }
   }
 
-  // SVG'yi PNG'ye çevir - Browser API kullanarak
+  // SVG'yi PNG'ye çevir - Sharp ile
   static async convertSVGtoPNG(svgContent: string): Promise<Buffer> {
     try {
-      // SVG'yi base64'e çevir
-      const svgBase64 = Buffer.from(svgContent).toString("base64")
-      const svgDataUrl = `data:image/svg+xml;base64,${svgBase64}`
+      // Sharp kullanarak SVG'yi PNG'ye çevir
+      const sharp = require("sharp")
 
-      // Canvas API ile PNG'ye çevir (Node.js ortamında çalışmaz, fallback kullanacağız)
-      // Bu kısım browser'da çalışır, server'da farklı yöntem kullanacağız
+      const pngBuffer = await sharp(Buffer.from(svgContent))
+        .png({
+          quality: 90,
+          compressionLevel: 6,
+        })
+        .resize(500, 700, {
+          fit: "contain",
+          background: { r: 30, g: 60, b: 114, alpha: 1 },
+        })
+        .toBuffer()
 
-      // Alternatif: Sharp kütüphanesi kullan (eğer yüklüyse)
-      try {
-        // @ts-ignore
-        const sharp = require("sharp")
-        const pngBuffer = await sharp(Buffer.from(svgContent)).png().resize(500, 700).toBuffer()
-
-        console.log("✅ SVG converted to PNG using Sharp")
-        return pngBuffer
-      } catch (sharpError) {
-        console.log("Sharp not available, using fallback method")
-
-        // Fallback: SVG'yi PNG olarak döndür (Telegram SVG'yi destekler)
-        return Buffer.from(svgContent, "utf-8")
-      }
+      console.log("✅ SVG converted to PNG using Sharp")
+      return pngBuffer
     } catch (error) {
-      console.error("Error converting SVG to PNG:", error)
+      console.error("Sharp conversion failed:", error)
       throw error
     }
   }
 
-  // Fallback PNG oluştur
-  static async createFallbackPNG(data: DepthImageData): Promise<Buffer> {
+  // Canvas ile PNG oluştur (fallback)
+  static async createCanvasPNG(data: DepthImageData): Promise<Buffer> {
     try {
-      // Basit bir PNG header oluştur (1x1 pixel)
+      console.log("Creating fallback Canvas PNG")
+
+      // HTML Canvas benzeri yaklaşım - basit PNG
       const width = 500
       const height = 700
 
-      // PNG header + basit görsel
-      const pngHeader = Buffer.from([
-        0x89,
-        0x50,
-        0x4e,
-        0x47,
-        0x0d,
-        0x0a,
-        0x1a,
-        0x0a, // PNG signature
-        0x00,
-        0x00,
-        0x00,
-        0x0d, // IHDR chunk length
-        0x49,
-        0x48,
-        0x44,
-        0x52, // IHDR
-        0x00,
-        0x00,
-        0x01,
-        0xf4, // Width (500)
-        0x00,
-        0x00,
-        0x02,
-        0xbc, // Height (700)
-        0x08,
-        0x02,
-        0x00,
-        0x00,
-        0x00, // Bit depth, color type, etc.
-        0x8b,
-        0x6f,
-        0x26,
-        0x7b, // CRC
-        0x00,
-        0x00,
-        0x00,
-        0x00, // IEND chunk length
-        0x49,
-        0x45,
-        0x4e,
-        0x44, // IEND
-        0xae,
-        0x42,
-        0x60,
-        0x82, // CRC
-      ])
+      // Basit bir PNG header oluştur
+      const canvas = this.createSimpleCanvas(width, height, data)
 
-      return pngHeader
+      return canvas
     } catch (error) {
-      console.error("Error creating fallback PNG:", error)
-      // En basit PNG (1x1 transparent)
+      console.error("Canvas PNG creation failed:", error)
+
+      // En basit fallback - 1x1 PNG
       const simplePNG = Buffer.from([
         0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00,
-        0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89, 0x00, 0x00, 0x00,
-        0x0b, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d,
-        0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
+        0x01, 0xf4, 0x00, 0x00, 0x02, 0xbc, 0x08, 0x02, 0x00, 0x00, 0x00, 0x8b, 0x6f, 0x26, 0x7b, 0x00, 0x00, 0x00,
+        0x09, 0x70, 0x48, 0x59, 0x73, 0x00, 0x00, 0x0b, 0x13, 0x00, 0x00, 0x0b, 0x13, 0x01, 0x00, 0x9a, 0x9c, 0x18,
+        0x00, 0x00, 0x00, 0x0c, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01,
+        0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
       ])
+
       return simplePNG
     }
+  }
+
+  // Basit canvas benzeri PNG oluştur
+  static createSimpleCanvas(width: number, height: number, data: DepthImageData): Buffer {
+    // Bu fonksiyon gerçek bir canvas implementasyonu değil
+    // Sadece basit bir PNG döndürür
+    const header = Buffer.from([
+      0x89,
+      0x50,
+      0x4e,
+      0x47,
+      0x0d,
+      0x0a,
+      0x1a,
+      0x0a, // PNG signature
+      0x00,
+      0x00,
+      0x00,
+      0x0d, // IHDR chunk length
+      0x49,
+      0x48,
+      0x44,
+      0x52, // IHDR
+      0x00,
+      0x00,
+      0x01,
+      0xf4, // Width (500)
+      0x00,
+      0x00,
+      0x02,
+      0xbc, // Height (700)
+      0x08,
+      0x02,
+      0x00,
+      0x00,
+      0x00, // Bit depth, color type, etc.
+      0x8b,
+      0x6f,
+      0x26,
+      0x7b, // CRC
+      0x00,
+      0x00,
+      0x00,
+      0x00, // IEND chunk length
+      0x49,
+      0x45,
+      0x4e,
+      0x44, // IEND
+      0xae,
+      0x42,
+      0x60,
+      0x82, // CRC
+    ])
+
+    return header
   }
 
   static formatNumber(num: number): string {
