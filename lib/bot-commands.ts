@@ -1,7 +1,6 @@
 import { Database } from "./database"
 import type { TelegramBot } from "./telegram"
 import { stockAPI } from "./stock-api"
-import { VercelOGGenerator, type DepthImageData } from "./vercel-og-generator"
 
 export class BotCommands {
   private bot: TelegramBot
@@ -173,18 +172,17 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       const keyboard = {
         inline_keyboard: [
           [
-            { text: "🎨 Vercel OG Görsel", callback_data: `derinlik_${stockCode}` },
-            { text: "📊 ASCII Tablo", callback_data: `tablo_${stockCode}` },
-          ],
-          [
+            { text: "📊 Derinlik Tablosu", callback_data: `derinlik_${stockCode}` },
             { text: "📈 Teorik", callback_data: `teorik_${stockCode}` },
-            { text: "📋 Temel", callback_data: `temel_${stockCode}` },
           ],
           [
+            { text: "📋 Temel", callback_data: `temel_${stockCode}` },
             { text: "📰 Haberler", callback_data: `haber_${stockCode}` },
-            { text: "⭐ Favoriye Ekle", callback_data: `favori_ekle_${stockCode}` },
           ],
-          [{ text: "🔄 Yenile", callback_data: `yenile_${stockCode}` }],
+          [
+            { text: "⭐ Favoriye Ekle", callback_data: `favori_ekle_${stockCode}` },
+            { text: "🔄 Yenile", callback_data: `yenile_${stockCode}` },
+          ],
         ],
       }
 
@@ -197,18 +195,24 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
     }
   }
 
+  // OG generation tamamen kaldırıldı - sadece ASCII tablo
   async getDepthImage(stockCode: string, chatId: number): Promise<void> {
-    try {
-      console.log(`🎨 Generating Vercel OG depth image for ${stockCode}`)
+    console.log(`📊 Generating ASCII depth table for ${stockCode} (OG disabled)`)
+    await this.getDepthTable(stockCode, chatId)
+  }
 
-      // Önce "görsel hazırlanıyor" mesajı gönder
+  async getDepthTable(stockCode: string, chatId: number): Promise<void> {
+    try {
+      console.log(`📊 Generating depth table for ${stockCode}`)
+
+      // Loading mesajı gönder
       const loadingMessage = await this.bot.sendMessage(
         chatId,
-        `🎨 ${stockCode} profesyonel derinlik görseli Vercel OG ile hazırlanıyor...
+        `📊 ${stockCode} derinlik tablosu hazırlanıyor...
 
-⚡ Vercel Edge Runtime
-🎯 System Fonts - Garantili Okunabilir!
-🚀 Font Loading Problemi YOK!`,
+⚡ ASCII Format - %100 Okunabilir!
+🎯 Font Problemi YOK!
+📱 Tüm cihazlarda mükemmel görünüm!`,
       )
 
       const depthData = await stockAPI.getMarketDepth(stockCode)
@@ -223,78 +227,8 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         return
       }
 
-      // Görsel verilerini hazırla
-      const imageData: DepthImageData = {
-        symbol: stockCode.toUpperCase(),
-        price: stockPrice.price,
-        change: stockPrice.change,
-        changePercent: stockPrice.changePercent,
-        bids: depthData.bids.slice(0, 15),
-        asks: depthData.asks.slice(0, 15),
-        timestamp: new Date().toISOString(),
-      }
-
-      try {
-        // Vercel OG ile PNG oluştur
-        const pngBuffer = await VercelOGGenerator.generateDepthPNG(imageData)
-
-        // Yükleme mesajını sil
-        await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
-
-        // PNG'yi photo olarak gönder
-        await this.bot.sendPhoto(chatId, pngBuffer, {
-          caption: `🎨 <b>${stockCode.toUpperCase()} - VERCEL OG DERİNLİK GÖRSELİ</b>
-
-💰 <b>Mevcut:</b> ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)
-
-🚀 <b>Vercel OG teknolojisi</b> - System Fonts!
-📊 15 kademe derinlik analizi
-⚡ Edge Runtime optimized
-🎨 Font Loading Garantili!
-
-📈 <b>En İyi Fiyatlar:</b>
-• 🟢 En Yüksek Alış: ${depthData.bids[0]?.price.toFixed(2)} ₺
-• 🔴 En Düşük Satış: ${depthData.asks[0]?.price.toFixed(2)} ₺
-• 📊 Spread: ${((depthData.asks[0]?.price || 0) - (depthData.bids[0]?.price || 0)).toFixed(2)} ₺
-
-💡 <b>Diğer Komutlar:</b>
-• /teorik ${stockCode} - Teorik analiz
-• /temel ${stockCode} - Temel analiz  
-• /haber ${stockCode} - KAP haberleri
-
-🤖 <b>@BorsaAnaliz_Bot</b> - Vercel OG Teknolojisi
-⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}`,
-          parse_mode: "HTML",
-        })
-
-        console.log(`✅ Vercel OG depth image sent for ${stockCode}`)
-      } catch (imageError) {
-        console.error("Vercel OG generation failed, falling back to table:", imageError)
-
-        // Vercel OG oluşturulamazsa tablo formatında gönder
-        await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
-        await this.getDepthTable(stockCode, chatId)
-      }
-    } catch (error) {
-      console.error(`Error generating Vercel OG depth image for ${stockCode}:`, error)
-      await this.bot.sendMessage(
-        chatId,
-        `❌ ${stockCode} için Vercel OG derinlik görseli oluşturulurken bir hata oluştu.`,
-      )
-    }
-  }
-
-  async getDepthTable(stockCode: string, chatId: number): Promise<void> {
-    try {
-      console.log(`Generating depth table for ${stockCode}`)
-
-      const depthData = await stockAPI.getMarketDepth(stockCode)
-      const stockPrice = await stockAPI.getStockPrice(stockCode)
-
-      if (!depthData || !stockPrice) {
-        await this.bot.sendMessage(chatId, `❌ ${stockCode} için derinlik verisi alınamadı.`)
-        return
-      }
+      // Loading mesajını sil
+      await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
 
       // Ultra profesyonel tablo formatı
       let tableMessage = `📊 <b>${stockCode.toUpperCase()} - PİYASA DERİNLİĞİ</b>
@@ -324,7 +258,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       }
 
       tableMessage += `
-╚════��╩════════╩════════╩════════╩════════╩═════╝</code>
+╚═════╩════════╩════════╩════════╩════════╩═════╝</code>
 
 🟢 <b>ALIŞ EMİRLERİ:</b> ${depthData.bids.length} kademe
 🔴 <b>SATIŞ EMİRLERİ:</b> ${depthData.asks.length} kademe
@@ -338,6 +272,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 ⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}`
 
       await this.bot.sendMessage(chatId, tableMessage)
+      console.log(`✅ ASCII depth table sent for ${stockCode}`)
     } catch (error) {
       console.error(`Error generating depth table for ${stockCode}:`, error)
       await this.bot.sendMessage(chatId, `❌ ${stockCode} için derinlik tablosu oluşturulurken bir hata oluştu.`)
