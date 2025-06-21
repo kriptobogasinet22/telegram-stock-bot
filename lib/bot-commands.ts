@@ -233,30 +233,34 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         timestamp: new Date().toISOString(),
       }
 
-      // Profesyonel HTML görseli oluştur
-      const htmlContent = await ImageGenerator.generateProfessionalDepthHTML(imageData)
+      try {
+        // HTML içeriğini oluştur
+        const htmlContent = await ImageGenerator.generateDepthImageHTML(imageData)
 
-      // Yükleme mesajını sil
-      await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
+        // HTML'i resme çevir
+        const imageBuffer = await ImageGenerator.convertHtmlToImage(htmlContent)
 
-      // HTML içeriğini mesaj olarak gönder (geçici çözüm)
-      const caption = `🖼️ <b>${stockCode.toUpperCase()} - Profesyonel Derinlik Tablosu</b>
+        // Yükleme mesajını sil
+        await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
+
+        // Resmi gönder
+        await this.bot.sendPhoto(chatId, imageBuffer, {
+          caption: `📊 <b>${stockCode.toUpperCase()} - Profesyonel Derinlik Tablosu</b>
 
 💰 Mevcut: ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)
 
 🤖 <b>@BorsaAnaliz_Bot</b> - Anlık borsa verileri
 📊 25 kademe derinlik analizi
-⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}
+⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}`,
+          parse_mode: "HTML",
+        })
+      } catch (imageError) {
+        console.error("Image generation failed, falling back to table:", imageError)
 
-💡 <b>Diğer Komutlar:</b>
-• /teorik ${stockCode} - Teorik analiz
-• /temel ${stockCode} - Temel analiz  
-• /haber ${stockCode} - KAP haberleri`
-
-      await this.bot.sendMessage(chatId, caption)
-
-      // Tablo formatında da gönder
-      await this.getDepthTable(stockCode, chatId)
+        // Görsel oluşturulamazsa tablo formatında gönder
+        await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
+        await this.getDepthTable(stockCode, chatId)
+      }
     } catch (error) {
       console.error(`Error generating professional depth image for ${stockCode}:`, error)
       await this.bot.sendMessage(
@@ -307,10 +311,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 └─────┴────────┴────────┴────────┴────────┴─────┘</code>
 
 🤖 <b>@BorsaAnaliz_Bot</b> - Profesyonel Borsa Analizi
-⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}
-
-💡 <b>Diğer Analizler:</b>
-• /teorik ${stockCode} • /temel ${stockCode} • /haber ${stockCode}`
+⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}`
 
       await this.bot.sendMessage(chatId, tableMessage)
     } catch (error) {
