@@ -8,11 +8,15 @@ export async function GET(request: NextRequest) {
     console.log("🎨 Depth OG Route called!")
 
     const { searchParams } = new URL(request.url)
+    console.log("📊 Raw search params:", Object.fromEntries(searchParams.entries()))
+
     const symbol = searchParams.get("symbol") || "THYAO"
     const price = Number.parseFloat(searchParams.get("price") || "25.50")
     const changePercent = Number.parseFloat(searchParams.get("changePercent") || "2.5")
 
-    // Parse bids and asks - BASIT YAKLAŞIM
+    console.log("📈 Parsed basic data:", { symbol, price, changePercent })
+
+    // Parse bids and asks - IMPROVED PARSING
     let bidsData = []
     let asksData = []
 
@@ -20,15 +24,28 @@ export async function GET(request: NextRequest) {
       const bidsParam = searchParams.get("bids")
       const asksParam = searchParams.get("asks")
 
+      console.log("📊 Raw bids param:", bidsParam?.substring(0, 100))
+      console.log("📊 Raw asks param:", asksParam?.substring(0, 100))
+
       if (bidsParam) {
-        bidsData = JSON.parse(decodeURIComponent(bidsParam)).slice(0, 15) // Sadece 15 kademe
+        // Double decode for URL encoding
+        const decodedBids = decodeURIComponent(bidsParam)
+        console.log("📊 Decoded bids:", decodedBids.substring(0, 100))
+        bidsData = JSON.parse(decodedBids).slice(0, 15)
+        console.log("✅ Bids parsed successfully:", bidsData.length)
       }
+
       if (asksParam) {
-        asksData = JSON.parse(decodeURIComponent(asksParam)).slice(0, 15)
+        const decodedAsks = decodeURIComponent(asksParam)
+        console.log("📊 Decoded asks:", decodedAsks.substring(0, 100))
+        asksData = JSON.parse(decodedAsks).slice(0, 15)
+        console.log("✅ Asks parsed successfully:", asksData.length)
       }
     } catch (parseError) {
-      console.log("Using mock data due to parse error")
-      // Mock data
+      console.error("❌ JSON parse error:", parseError)
+      console.log("🔄 Using mock data instead")
+
+      // Generate mock data
       for (let i = 0; i < 15; i++) {
         bidsData.push({
           price: price - (i + 1) * 0.05,
@@ -41,9 +58,40 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const changeColor = changePercent >= 0 ? "#00ff88" : "#ff4444"
+    // Ensure we have data
+    if (bidsData.length === 0 || asksData.length === 0) {
+      console.log("⚠️ No data, generating mock data")
+      bidsData = []
+      asksData = []
 
-    // BASIT VE GÜVENİLİR GÖRSEL
+      for (let i = 0; i < 15; i++) {
+        bidsData.push({
+          price: price - (i + 1) * 0.05,
+          quantity: Math.floor(Math.random() * 5000) + 1000,
+        })
+        asksData.push({
+          price: price + (i + 1) * 0.05,
+          quantity: Math.floor(Math.random() * 5000) + 1000,
+        })
+      }
+    }
+
+    console.log("📊 Final data:", {
+      symbol,
+      price,
+      changePercent,
+      bidsCount: bidsData.length,
+      asksCount: asksData.length,
+      firstBid: bidsData[0],
+      firstAsk: asksData[0],
+    })
+
+    const changeColor = changePercent >= 0 ? "#00ff88" : "#ff4444"
+    const changeSign = changePercent >= 0 ? "+" : ""
+
+    console.log("🎨 Creating ImageResponse...")
+
+    // SIMPLIFIED AND GUARANTEED WORKING DESIGN
     return new ImageResponse(
       <div
         style={{
@@ -98,7 +146,7 @@ export async function GET(request: NextRequest) {
                 color: "white",
               }}
             >
-              {changePercent >= 0 ? "+" : ""}
+              {changeSign}
               {changePercent.toFixed(2)}%
             </div>
           </div>
@@ -113,7 +161,7 @@ export async function GET(request: NextRequest) {
           </div>
         </div>
 
-        {/* Simple Table */}
+        {/* Main Content */}
         <div
           style={{
             display: "flex",
@@ -125,7 +173,7 @@ export async function GET(request: NextRequest) {
             padding: "30px",
           }}
         >
-          {/* Bids */}
+          {/* Bids Column */}
           <div style={{ width: "45%" }}>
             <div
               style={{
@@ -139,7 +187,7 @@ export async function GET(request: NextRequest) {
                 borderRadius: "8px",
               }}
             >
-              ALIŞ EMİRLERİ
+              ALIŞ EMİRLERİ ({bidsData.length})
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -156,14 +204,14 @@ export async function GET(request: NextRequest) {
                     color: "#00ff88",
                   }}
                 >
-                  <span style={{ fontWeight: "600" }}>{bid.price?.toFixed(2)}</span>
-                  <span>{formatNumber(bid.quantity)}</span>
+                  <span style={{ fontWeight: "600" }}>{bid.price?.toFixed(2) || "0.00"}</span>
+                  <span>{formatNumber(bid.quantity || 0)}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Center */}
+          {/* Center Divider */}
           <div
             style={{
               width: "10%",
@@ -182,7 +230,7 @@ export async function GET(request: NextRequest) {
             />
           </div>
 
-          {/* Asks */}
+          {/* Asks Column */}
           <div style={{ width: "45%" }}>
             <div
               style={{
@@ -196,7 +244,7 @@ export async function GET(request: NextRequest) {
                 borderRadius: "8px",
               }}
             >
-              SATIŞ EMİRLERİ
+              SATIŞ EMİRLERİ ({asksData.length})
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -213,8 +261,8 @@ export async function GET(request: NextRequest) {
                     color: "#ff4444",
                   }}
                 >
-                  <span>{formatNumber(ask.quantity)}</span>
-                  <span style={{ fontWeight: "600" }}>{ask.price?.toFixed(2)}</span>
+                  <span>{formatNumber(ask.quantity || 0)}</span>
+                  <span style={{ fontWeight: "600" }}>{ask.price?.toFixed(2) || "0.00"}</span>
                 </div>
               ))}
             </div>
@@ -237,6 +285,10 @@ export async function GET(request: NextRequest) {
           }}
         >
           <div>📊 {symbol} - PİYASA DERİNLİĞİ</div>
+          <div>
+            🟢 En İyi Alış: {bidsData[0]?.price?.toFixed(2) || "0.00"} | 🔴 En İyi Satış:{" "}
+            {asksData[0]?.price?.toFixed(2) || "0.00"}
+          </div>
           <div>{new Date().toLocaleTimeString("tr-TR")}</div>
         </div>
       </div>,
@@ -248,25 +300,33 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("❌ Depth OG error:", error)
 
-    // Minimal fallback
+    // ERROR FALLBACK WITH VISIBLE CONTENT
     return new ImageResponse(
       <div
         style={{
           height: "630px",
           width: "1200px",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#1e3c72",
+          background: "linear-gradient(135deg, #ff4444 0%, #cc0000 100%)",
           color: "white",
-          fontSize: "48px",
+          fontSize: "32px",
           fontWeight: "bold",
+          fontFamily: "system-ui",
+          padding: "40px",
         }}
       >
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: "64px", marginBottom: "20px" }}>❌</div>
-          <div>OG Generation Error</div>
-          <div style={{ fontSize: "24px", marginTop: "20px" }}>Fallback Mode</div>
+          <div style={{ marginBottom: "20px" }}>DEPTH CHART ERROR</div>
+          <div style={{ fontSize: "24px", marginBottom: "20px" }}>
+            {error instanceof Error ? error.message.substring(0, 100) : "Unknown error"}
+          </div>
+          <div style={{ fontSize: "18px", background: "rgba(0,0,0,0.5)", padding: "10px", borderRadius: "8px" }}>
+            Check console logs for details
+          </div>
         </div>
       </div>,
       {
@@ -278,6 +338,7 @@ export async function GET(request: NextRequest) {
 }
 
 function formatNumber(num: number): string {
+  if (!num || isNaN(num)) return "0"
   if (num >= 1000000) {
     return (num / 1000000).toFixed(1) + "M"
   } else if (num >= 1000) {
