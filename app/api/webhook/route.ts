@@ -88,10 +88,7 @@ Artık botu kullanabilirsiniz! İsteğiniz admin tarafından değerlendirilecek.
         await commands.checkMembership(userId, chatId)
       } else if (data.startsWith("derinlik_")) {
         const stockCode = data.replace("derinlik_", "")
-        await commands.getDepthImage(stockCode, chatId)
-      } else if (data.startsWith("tablo_")) {
-        const stockCode = data.replace("tablo_", "")
-        await commands.getDepthTable(stockCode, chatId)
+        await commands.getDepthImage(stockCode, chatId) // Bu artık sadece ASCII tablo gösterecek
       } else if (data.startsWith("teorik_")) {
         const stockCode = data.replace("teorik_", "")
         const analysis = await commands.getTheoreticalAnalysis(stockCode)
@@ -145,7 +142,7 @@ Artık botu kullanabilirsiniz! İsteğiniz admin tarafından değerlendirilecek.
         await commands.handleStart(userId, chatId, message.from!)
       } else if (text.startsWith("/derinlik ")) {
         const stockCode = text.replace("/derinlik ", "").toUpperCase()
-        await commands.getDepthImage(stockCode, chatId)
+        await commands.getDepthImage(stockCode, chatId) // ASCII tablo
       } else if (text.startsWith("/teorik ")) {
         const stockCode = text.replace("/teorik ", "").toUpperCase()
         const analysis = await commands.getTheoreticalAnalysis(stockCode)
@@ -206,6 +203,6 @@ export async function GET() {
     timestamp: new Date().toISOString(),
     botToken: process.env.TELEGRAM_BOT_TOKEN ? "✅ Token Set" : "❌ Token Missing",
     supabase: process.env.SUPABASE_URL ? "✅ Supabase Set" : "❌ Supabase Missing",
-    vercelUrl: process.env.VERCEL_URL ? "✅ Vercel URL Set" : "❌ Vercel URL Missing",
+    note: "OG generation disabled - ASCII tables only",
   })
 }
