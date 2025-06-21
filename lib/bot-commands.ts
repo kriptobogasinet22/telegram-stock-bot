@@ -202,7 +202,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 
   async getDepthImage(stockCode: string, chatId: number): Promise<void> {
     try {
-      console.log(`Generating professional depth image for ${stockCode}`)
+      console.log(`Generating SVG depth image for ${stockCode}`)
 
       // Önce "görsel hazırlanıyor" mesajı gönder
       const loadingMessage = await this.bot.sendMessage(
@@ -234,39 +234,41 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       }
 
       try {
-        // HTML içeriğini oluştur
-        const htmlContent = await ImageGenerator.generateDepthImageHTML(imageData)
-
-        // HTML'i resme çevir
-        const imageBuffer = await ImageGenerator.convertHtmlToImage(htmlContent)
+        // SVG görsel oluştur
+        const svgBuffer = await ImageGenerator.generateDepthSVG(imageData)
 
         // Yükleme mesajını sil
         await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
 
-        // Resmi gönder
-        await this.bot.sendPhoto(chatId, imageBuffer, {
+        // SVG'yi document olarak gönder (Telegram SVG'yi resim olarak gösterir)
+        await this.bot.sendDocument(chatId, svgBuffer, {
+          filename: `${stockCode}_derinlik.svg`,
           caption: `📊 <b>${stockCode.toUpperCase()} - Profesyonel Derinlik Tablosu</b>
 
 💰 Mevcut: ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)
 
 🤖 <b>@BorsaAnaliz_Bot</b> - Anlık borsa verileri
 📊 25 kademe derinlik analizi
-⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}`,
+⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}
+
+💡 <b>Diğer Komutlar:</b>
+• /teorik ${stockCode} - Teorik analiz
+• /temel ${stockCode} - Temel analiz  
+• /haber ${stockCode} - KAP haberleri`,
           parse_mode: "HTML",
         })
-      } catch (imageError) {
-        console.error("Image generation failed, falling back to table:", imageError)
 
-        // Görsel oluşturulamazsa tablo formatında gönder
+        console.log(`✅ SVG depth image sent for ${stockCode}`)
+      } catch (imageError) {
+        console.error("SVG generation failed, falling back to table:", imageError)
+
+        // SVG oluşturulamazsa tablo formatında gönder
         await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
         await this.getDepthTable(stockCode, chatId)
       }
     } catch (error) {
-      console.error(`Error generating professional depth image for ${stockCode}:`, error)
-      await this.bot.sendMessage(
-        chatId,
-        `❌ ${stockCode} için profesyonel derinlik görseli oluşturulurken bir hata oluştu.`,
-      )
+      console.error(`Error generating depth image for ${stockCode}:`, error)
+      await this.bot.sendMessage(chatId, `❌ ${stockCode} için derinlik görseli oluşturulurken bir hata oluştu.`)
     }
   }
 
