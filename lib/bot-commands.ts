@@ -1,6 +1,7 @@
 import { Database } from "./database"
 import type { TelegramBot } from "./telegram"
 import { stockAPI } from "./stock-api"
+import { ImageGenerator, type DepthImageData } from "./image-generator"
 
 export class BotCommands {
   private bot: TelegramBot
@@ -176,12 +177,12 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
             { text: "📈 Teorik", callback_data: `teorik_${stockCode}` },
           ],
           [
-            { text: "🏢 AKD", callback_data: `akd_${stockCode}` },
-            { text: "💱 Takas", callback_data: `takas_${stockCode}` },
+            { text: "🖼️ Derinlik Görseli", callback_data: `derinlik_gorsel_${stockCode}` },
+            { text: "📋 Temel", callback_data: `temel_${stockCode}` },
           ],
           [
-            { text: "📋 Temel", callback_data: `temel_${stockCode}` },
-            { text: "📊 Teknik", callback_data: `teknik_${stockCode}` },
+            { text: "🏢 AKD", callback_data: `akd_${stockCode}` },
+            { text: "💱 Takas", callback_data: `takas_${stockCode}` },
           ],
           [
             { text: "📰 Haberler", callback_data: `haber_${stockCode}` },
@@ -229,6 +230,53 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
     } catch (error) {
       console.error(`Error getting depth analysis for ${stockCode}:`, error)
       return `❌ ${stockCode} için derinlik analizi yapılırken bir hata oluştu.`
+    }
+  }
+
+  async getDepthImage(stockCode: string, chatId: number): Promise<void> {
+    try {
+      console.log(`Generating depth image for ${stockCode}`)
+
+      // Önce "görsel hazırlanıyor" mesajı gönder
+      const loadingMessage = await this.bot.sendMessage(chatId, `🖼️ ${stockCode} derinlik görseli hazırlanıyor...`)
+
+      const depthData = await stockAPI.getMarketDepth(stockCode)
+      const stockPrice = await stockAPI.getStockPrice(stockCode)
+
+      if (!depthData || !stockPrice) {
+        await this.bot.editMessageText(
+          chatId,
+          loadingMessage.result.message_id,
+          `❌ ${stockCode} için derinlik verisi alınamadı.`,
+        )
+        return
+      }
+
+      // Görsel verilerini hazırla
+      const imageData: DepthImageData = {
+        symbol: stockCode.toUpperCase(),
+        price: stockPrice.price,
+        change: stockPrice.change,
+        changePercent: stockPrice.changePercent,
+        bids: depthData.bids.slice(0, 25),
+        asks: depthData.asks.slice(0, 25),
+        timestamp: new Date().toISOString(),
+      }
+
+      // Görseli oluştur
+      const imageBuffer = await ImageGenerator.generateSimpleDepthImage(imageData)
+
+      // Yükleme mesajını sil
+      await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
+
+      // Görseli gönder
+      await this.bot.sendPhoto(chatId, imageBuffer, {
+        caption: `📊 <b>${stockCode.toUpperCase()} - 25 Kademe Derinlik</b>\n\n💰 Mevcut: ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)\n\n<i>Son güncelleme: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}</i>`,
+        parse_mode: "HTML",
+      })
+    } catch (error) {
+      console.error(`Error generating depth image for ${stockCode}:`, error)
+      await this.bot.sendMessage(chatId, `❌ ${stockCode} için derinlik görseli oluşturulurken bir hata oluştu.`)
     }
   }
 
