@@ -13,70 +13,19 @@ export class VercelOGGenerator {
     try {
       console.log(`🎨 Generating Depth Chart for ${data.symbol}`)
 
-      // HARDCODE VERCEL URL - NO ENV DEPENDENCY
+      // Hardcoded Vercel URL
       const baseUrl = "https://telegram-stock-bot-seven.vercel.app"
-
-      console.log(`🌐 Using hardcoded Base URL: ${baseUrl}`)
-
-      // TRY SIMPLE DEPTH FIRST (no complex data)
-      try {
-        console.log("🔄 Trying simple depth route...")
-
-        const simpleParams = new URLSearchParams()
-        simpleParams.set("symbol", data.symbol)
-        simpleParams.set("price", data.price.toString())
-        simpleParams.set("changePercent", data.changePercent.toString())
-
-        const simpleUrl = `${baseUrl}/api/og/simple-depth?${simpleParams.toString()}`
-
-        console.log(`🚀 Simple depth URL: ${simpleUrl}`)
-
-        const simpleResponse = await fetch(simpleUrl, {
-          method: "GET",
-          headers: {
-            "User-Agent": "TelegramBot/1.0",
-            Accept: "image/png,image/*,*/*",
-          },
-          signal: AbortSignal.timeout(10000),
-        })
-
-        console.log(`📡 Simple depth response: ${simpleResponse.status}`)
-
-        if (simpleResponse.ok) {
-          const contentType = simpleResponse.headers.get("content-type")
-          console.log(`📄 Content type: ${contentType}`)
-
-          if (contentType?.includes("image")) {
-            const arrayBuffer = await simpleResponse.arrayBuffer()
-            const buffer = Buffer.from(arrayBuffer)
-
-            if (buffer.length > 0) {
-              console.log(`✅ Simple depth chart generated: ${buffer.length} bytes`)
-              return buffer
-            }
-          }
-        }
-
-        // Log response for debugging
-        const responseText = await simpleResponse.text()
-        console.log(`📄 Response text: ${responseText.substring(0, 200)}`)
-      } catch (simpleError) {
-        console.error("❌ Simple depth failed:", simpleError)
-      }
-
-      // FALLBACK: Basic OG
-      console.log("🔄 Using basic OG fallback...")
 
       const params = new URLSearchParams()
       params.set("symbol", data.symbol)
       params.set("price", data.price.toString())
       params.set("changePercent", data.changePercent.toString())
 
-      const ogUrl = `${baseUrl}/api/og?${params.toString()}`
+      const url = `${baseUrl}/api/og/simple-depth?${params.toString()}`
 
-      console.log(`🔄 Fallback OG: ${ogUrl}`)
+      console.log(`🚀 Fetching: ${url}`)
 
-      const response = await fetch(ogUrl, {
+      const response = await fetch(url, {
         method: "GET",
         headers: {
           "User-Agent": "TelegramBot/1.0",
@@ -85,14 +34,19 @@ export class VercelOGGenerator {
         signal: AbortSignal.timeout(10000),
       })
 
+      console.log(`📡 Response: ${response.status}`)
+
       if (!response.ok) {
-        throw new Error(`Fallback failed: ${response.status}`)
+        throw new Error(`OG failed: ${response.status}`)
       }
 
       const arrayBuffer = await response.arrayBuffer()
-      return Buffer.from(arrayBuffer)
+      const buffer = Buffer.from(arrayBuffer)
+
+      console.log(`✅ Chart generated: ${buffer.length} bytes`)
+      return buffer
     } catch (error) {
-      console.error("❌ All depth chart methods failed:", error)
+      console.error("❌ Chart generation failed:", error)
       throw error
     }
   }
