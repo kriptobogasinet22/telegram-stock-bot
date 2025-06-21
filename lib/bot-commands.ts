@@ -173,20 +173,16 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       const keyboard = {
         inline_keyboard: [
           [
-            { text: "📊 Derinlik", callback_data: `derinlik_${stockCode}` },
+            { text: "📊 Derinlik Görseli", callback_data: `derinlik_${stockCode}` },
             { text: "📈 Teorik", callback_data: `teorik_${stockCode}` },
           ],
           [
-            { text: "🖼️ Derinlik Tablosu", callback_data: `derinlik_tablo_${stockCode}` },
             { text: "📋 Temel", callback_data: `temel_${stockCode}` },
-          ],
-          [
             { text: "🏢 AKD", callback_data: `akd_${stockCode}` },
-            { text: "💱 Takas", callback_data: `takas_${stockCode}` },
           ],
           [
+            { text: "💱 Takas", callback_data: `takas_${stockCode}` },
             { text: "📰 Haberler", callback_data: `haber_${stockCode}` },
-            { text: "📈 VIOP", callback_data: `viop_${stockCode}` },
           ],
           [
             { text: "⭐ Favoriye Ekle", callback_data: `favori_ekle_${stockCode}` },
@@ -204,41 +200,15 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
     }
   }
 
-  async getDepthAnalysis(stockCode: string): Promise<string> {
+  async getDepthImage(stockCode: string, chatId: number): Promise<void> {
     try {
-      const depthData = await stockAPI.getMarketDepth(stockCode)
+      console.log(`Generating professional depth image for ${stockCode}`)
 
-      if (!depthData) {
-        return `❌ ${stockCode} için derinlik verisi alınamadı.`
-      }
-
-      let message = `📊 <b>${stockCode.toUpperCase()} - 25 Kademe Derinlik</b>\n\n`
-
-      message += `<b>🔴 SATIŞ EMİRLERİ</b>\n`
-      depthData.asks.slice(0, 10).forEach((ask, index) => {
-        message += `${index + 1}. ${ask.price.toFixed(2)} TL - ${ask.quantity.toLocaleString()}\n`
-      })
-
-      message += `\n<b>🟢 ALIŞ EMİRLERİ</b>\n`
-      depthData.bids.slice(0, 10).forEach((bid, index) => {
-        message += `${index + 1}. ${bid.price.toFixed(2)} TL - ${bid.quantity.toLocaleString()}\n`
-      })
-
-      message += `\n<i>Son güncelleme: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}</i>`
-
-      return message
-    } catch (error) {
-      console.error(`Error getting depth analysis for ${stockCode}:`, error)
-      return `❌ ${stockCode} için derinlik analizi yapılırken bir hata oluştu.`
-    }
-  }
-
-  async getDepthTable(stockCode: string, chatId: number): Promise<void> {
-    try {
-      console.log(`Generating depth table for ${stockCode}`)
-
-      // Önce "tablo hazırlanıyor" mesajı gönder
-      const loadingMessage = await this.bot.sendMessage(chatId, `📊 ${stockCode} derinlik tablosu hazırlanıyor...`)
+      // Önce "görsel hazırlanıyor" mesajı gönder
+      const loadingMessage = await this.bot.sendMessage(
+        chatId,
+        `🖼️ ${stockCode} profesyonel derinlik görseli hazırlanıyor...`,
+      )
 
       const depthData = await stockAPI.getMarketDepth(stockCode)
       const stockPrice = await stockAPI.getStockPrice(stockCode)
@@ -252,7 +222,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         return
       }
 
-      // Tablo verilerini hazırla
+      // Görsel verilerini hazırla
       const imageData: DepthImageData = {
         symbol: stockCode.toUpperCase(),
         price: stockPrice.price,
@@ -263,40 +233,31 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         timestamp: new Date().toISOString(),
       }
 
-      // HTML tablosu oluştur
-      const htmlTable = await ImageGenerator.generateDepthHTML(imageData)
+      // Profesyonel SVG görseli oluştur
+      const svgContent = await ImageGenerator.generateProfessionalDepthSVG(imageData)
+
+      // SVG'yi Buffer'a çevir
+      const svgBuffer = Buffer.from(svgContent, "utf-8")
 
       // Yükleme mesajını sil
       await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
 
-      // HTML tablosunu mesaj olarak gönder (geçici çözüm)
-      let tableMessage = `📊 <b>${stockCode.toUpperCase()} - Derinlik Tablosu</b>\n\n`
-      tableMessage += `💰 <b>Mevcut:</b> ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)\n\n`
+      // SVG'yi document olarak gönder (Telegram SVG'yi destekler)
+      await this.bot.sendDocument(chatId, svgBuffer, {
+        filename: `${stockCode}_derinlik.svg`,
+        caption: `📊 <b>${stockCode.toUpperCase()} - Profesyonel Derinlik Tablosu</b>
 
-      tableMessage += `<b>🟢 ALIŞ EMİRLERİ</b>\n`
-      tableMessage += `<code>Fiyat    | Adet\n`
-      tableMessage += `---------|----------\n`
-      depthData.bids.slice(0, 10).forEach((bid) => {
-        const price = bid.price.toFixed(2).padEnd(8)
-        const quantity = bid.quantity.toLocaleString().padStart(8)
-        tableMessage += `${price} | ${quantity}\n`
+💰 Mevcut: ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)
+
+<i>Son güncelleme: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}</i>`,
+        parse_mode: "HTML",
       })
-
-      tableMessage += `\n🔴 SATIŞ EMİRLERİ\n`
-      tableMessage += `Fiyat    | Adet\n`
-      tableMessage += `---------|----------\n`
-      depthData.asks.slice(0, 10).forEach((ask) => {
-        const price = ask.price.toFixed(2).padEnd(8)
-        const quantity = ask.quantity.toLocaleString().padStart(8)
-        tableMessage += `${price} | ${quantity}\n`
-      })
-
-      tableMessage += `</code>\n\n<i>Son güncelleme: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}</i>`
-
-      await this.bot.sendMessage(chatId, tableMessage)
     } catch (error) {
-      console.error(`Error generating depth table for ${stockCode}:`, error)
-      await this.bot.sendMessage(chatId, `❌ ${stockCode} için derinlik tablosu oluşturulurken bir hata oluştu.`)
+      console.error(`Error generating professional depth image for ${stockCode}:`, error)
+      await this.bot.sendMessage(
+        chatId,
+        `❌ ${stockCode} için profesyonel derinlik görseli oluşturulurken bir hata oluştu.`,
+      )
     }
   }
 
