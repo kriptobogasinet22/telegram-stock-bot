@@ -97,6 +97,39 @@ export class TelegramBot {
     }
   }
 
+  async sendPhoto(chatId: number | string, photo: Buffer, options: any = {}) {
+    try {
+      console.log(`Sending photo to ${chatId}`)
+
+      const formData = new FormData()
+      formData.append("chat_id", chatId.toString())
+      formData.append("photo", new Blob([photo], { type: "image/png" }), "depth_chart.png")
+
+      if (options.caption) {
+        formData.append("caption", options.caption)
+      }
+      if (options.parse_mode) {
+        formData.append("parse_mode", options.parse_mode)
+      }
+
+      const response = await fetch(`${this.baseUrl}/sendPhoto`, {
+        method: "POST",
+        body: formData,
+      })
+
+      const result = await response.json()
+
+      if (!result.ok) {
+        console.error(`Failed to send photo to ${chatId}:`, result.description)
+      }
+
+      return result
+    } catch (error) {
+      console.error(`Error sending photo to ${chatId}:`, error)
+      throw error
+    }
+  }
+
   async editMessageText(chatId: number | string, messageId: number, text: string, options: any = {}) {
     try {
       const response = await fetch(`${this.baseUrl}/editMessageText`, {
@@ -116,6 +149,26 @@ export class TelegramBot {
       return await response.json()
     } catch (error) {
       console.error(`Error editing message ${messageId} in chat ${chatId}:`, error)
+      throw error
+    }
+  }
+
+  async deleteMessage(chatId: number | string, messageId: number) {
+    try {
+      const response = await fetch(`${this.baseUrl}/deleteMessage`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          message_id: messageId,
+        }),
+      })
+
+      return await response.json()
+    } catch (error) {
+      console.error(`Error deleting message ${messageId} in chat ${chatId}:`, error)
       throw error
     }
   }
