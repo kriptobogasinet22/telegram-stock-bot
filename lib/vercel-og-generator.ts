@@ -9,28 +9,29 @@ export interface DepthImageData {
 }
 
 export class VercelOGGenerator {
-  static async generateDepthPNG(data: DepthImageData): Promise<Buffer> {
+  static async generateDepthChart(data: DepthImageData): Promise<Buffer> {
     try {
-      console.log(`🎨 Generating Vercel OG PNG for ${data.symbol}`)
+      console.log(`🎨 Generating Depth Chart for ${data.symbol}`)
 
-      // Basit route kullan - /api/og (depth alt route'u yerine)
       const baseUrl = process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL}`
         : process.env.NEXTAUTH_URL || "http://localhost:3000"
 
       console.log(`🌐 Base URL: ${baseUrl}`)
 
-      // Minimal parametreler
+      // URL parametrelerini hazırla
       const params = new URLSearchParams()
       params.set("symbol", data.symbol)
       params.set("price", data.price.toString())
       params.set("changePercent", data.changePercent.toString())
-      params.set("bidsCount", data.bids.length.toString())
-      params.set("asksCount", data.asks.length.toString())
 
-      const ogUrl = `${baseUrl}/api/og?${params.toString()}`
+      // Bids ve asks verilerini JSON olarak encode et
+      params.set("bids", encodeURIComponent(JSON.stringify(data.bids.slice(0, 25))))
+      params.set("asks", encodeURIComponent(JSON.stringify(data.asks.slice(0, 25))))
 
-      console.log(`🚀 Calling simplified OG API: ${ogUrl}`)
+      const ogUrl = `${baseUrl}/api/og/depth-chart?${params.toString()}`
+
+      console.log(`🚀 Calling Depth Chart OG API: ${ogUrl.substring(0, 150)}...`)
 
       const response = await fetch(ogUrl, {
         method: "GET",
@@ -39,8 +40,7 @@ export class VercelOGGenerator {
           Accept: "image/png,image/*,*/*",
           "Cache-Control": "no-cache",
         },
-        // Timeout
-        signal: AbortSignal.timeout(15000), // 15 saniye timeout
+        signal: AbortSignal.timeout(20000), // 20 saniye timeout
       })
 
       console.log(`📡 Response status: ${response.status}`)
@@ -48,9 +48,9 @@ export class VercelOGGenerator {
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error(`❌ OG API failed: ${response.status}`)
+        console.error(`❌ Depth Chart OG API failed: ${response.status}`)
         console.error(`❌ Error response: ${errorText.substring(0, 500)}`)
-        throw new Error(`OG API failed: ${response.status} - ${errorText.substring(0, 200)}`)
+        throw new Error(`Depth Chart OG API failed: ${response.status} - ${errorText.substring(0, 200)}`)
       }
 
       const contentType = response.headers.get("content-type")
@@ -65,16 +65,69 @@ export class VercelOGGenerator {
       const arrayBuffer = await response.arrayBuffer()
       const buffer = Buffer.from(arrayBuffer)
 
-      console.log(`✅ PNG generated for ${data.symbol}, size: ${buffer.length} bytes`)
+      console.log(`✅ Depth Chart generated for ${data.symbol}, size: ${buffer.length} bytes`)
 
       if (buffer.length === 0) {
-        throw new Error("PNG buffer is empty")
+        throw new Error("Depth Chart buffer is empty")
+      }
+
+      // PNG header kontrolü
+      const pngHeader = buffer.slice(0, 8)
+      const expectedPngHeader = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+
+      if (!pngHeader.equals(expectedPngHeader)) {
+        console.warn("⚠️ Generated file may not be a valid PNG")
       }
 
       return buffer
     } catch (error) {
-      console.error("❌ Vercel OG generation error:", error)
-      throw error // Error'u yukarı fırlat ki ASCII fallback çalışsın
+      console.error("❌ Vercel Depth Chart generation error:", error)
+      throw error
+    }
+  }
+
+  // Basit OG image generation (fallback)
+  static async generateSimpleOG(data: DepthImageData): Promise<Buffer> {
+    try {
+      console.log(`🎨 Generating Simple OG for ${data.symbol}`)
+
+      const baseUrl = process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : process.env.NEXTAUTH_URL || "http://localhost:3000"
+
+      const params = new URLSearchParams()
+      params.set("symbol", data.symbol)
+      params.set("price", data.price.toString())
+      params.set("changePercent", data.changePercent.toString())
+      params.set("bidsCount", data.bids.length.toString())
+      params.set("asksCount", data.asks.length.toString())
+
+      const ogUrl = `${baseUrl}/api/og?${params.toString()}`
+
+      console.log(`🚀 Calling Simple OG API: ${ogUrl}`)
+
+      const response = await fetch(ogUrl, {
+        method: "GET",
+        headers: {
+          "User-Agent": "TelegramBot/1.0",
+          Accept: "image/png,image/*,*/*",
+          "Cache-Control": "no-cache",
+        },
+        signal: AbortSignal.timeout(15000),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Simple OG API failed: ${response.status}`)
+      }
+
+      const arrayBuffer = await response.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+
+      console.log(`✅ Simple OG generated for ${data.symbol}, size: ${buffer.length} bytes`)
+      return buffer
+    } catch (error) {
+      console.error("❌ Simple OG generation error:", error)
+      throw error
     }
   }
 
