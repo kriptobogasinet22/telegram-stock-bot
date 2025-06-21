@@ -1,7 +1,6 @@
 import { Database } from "./database"
 import type { TelegramBot } from "./telegram"
 import { stockAPI } from "./stock-api"
-import { ImageGenerator, type DepthImageData } from "./image-generator"
 
 export class BotCommands {
   private bot: TelegramBot
@@ -173,7 +172,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       const keyboard = {
         inline_keyboard: [
           [
-            { text: "🖼️ Derinlik Görseli", callback_data: `derinlik_${stockCode}` },
+            { text: "📊 Derinlik Tablosu", callback_data: `derinlik_${stockCode}` },
             { text: "📈 Teorik", callback_data: `teorik_${stockCode}` },
           ],
           [
@@ -202,78 +201,19 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 
   async getDepthImage(stockCode: string, chatId: number): Promise<void> {
     try {
-      console.log(`🖼️ Generating readable PNG depth image for ${stockCode}`)
+      console.log(`📊 Generating professional depth table for ${stockCode}`)
 
-      // Önce "görsel hazırlanıyor" mesajı gönder
-      const loadingMessage = await this.bot.sendMessage(
-        chatId,
-        `🖼️ ${stockCode} profesyonel derinlik görseli hazırlanıyor...`,
-      )
-
-      const depthData = await stockAPI.getMarketDepth(stockCode)
-      const stockPrice = await stockAPI.getStockPrice(stockCode)
-
-      if (!depthData || !stockPrice) {
-        await this.bot.editMessageText(
-          chatId,
-          loadingMessage.result.message_id,
-          `❌ ${stockCode} için derinlik verisi alınamadı.`,
-        )
-        return
-      }
-
-      // Görsel verilerini hazırla
-      const imageData: DepthImageData = {
-        symbol: stockCode.toUpperCase(),
-        price: stockPrice.price,
-        change: stockPrice.change,
-        changePercent: stockPrice.changePercent,
-        bids: depthData.bids.slice(0, 20),
-        asks: depthData.asks.slice(0, 20),
-        timestamp: new Date().toISOString(),
-      }
-
-      try {
-        // PNG görsel oluştur - Web safe fontlarla
-        const pngBuffer = await ImageGenerator.generateDepthPNG(imageData)
-
-        // Yükleme mesajını sil
-        await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
-
-        // PNG'yi photo olarak gönder (inline görünüm)
-        await this.bot.sendPhoto(chatId, pngBuffer, {
-          caption: `📊 <b>${stockCode.toUpperCase()} - Profesyonel Derinlik Tablosu</b>
-
-💰 Mevcut: ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)
-
-🤖 <b>@BorsaAnaliz_Bot</b> - Anlık borsa verileri
-📊 25 kademe derinlik analizi
-⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}
-
-💡 <b>Diğer Komutlar:</b>
-• /teorik ${stockCode} - Teorik analiz
-• /temel ${stockCode} - Temel analiz  
-• /haber ${stockCode} - KAP haberleri`,
-          parse_mode: "HTML",
-        })
-
-        console.log(`✅ Readable PNG depth image sent for ${stockCode}`)
-      } catch (imageError) {
-        console.error("PNG generation failed, falling back to table:", imageError)
-
-        // PNG oluşturulamazsa tablo formatında gönder
-        await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
-        await this.getDepthTable(stockCode, chatId)
-      }
+      // Direkt profesyonel tablo formatında gönder
+      await this.getDepthTable(stockCode, chatId)
     } catch (error) {
-      console.error(`Error generating depth image for ${stockCode}:`, error)
-      await this.bot.sendMessage(chatId, `❌ ${stockCode} için derinlik görseli oluşturulurken bir hata oluştu.`)
+      console.error(`Error generating depth table for ${stockCode}:`, error)
+      await this.bot.sendMessage(chatId, `❌ ${stockCode} için derinlik tablosu oluşturulurken bir hata oluştu.`)
     }
   }
 
   async getDepthTable(stockCode: string, chatId: number): Promise<void> {
     try {
-      console.log(`Generating depth table for ${stockCode}`)
+      console.log(`Generating enhanced depth table for ${stockCode}`)
 
       const depthData = await stockAPI.getMarketDepth(stockCode)
       const stockPrice = await stockAPI.getStockPrice(stockCode)
@@ -283,17 +223,19 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         return
       }
 
-      // Profesyonel tablo formatı
-      let tableMessage = `📊 <b>${stockCode.toUpperCase()} - Derinlik Tablosu</b>
+      // Ultra profesyonel tablo formatı - Renkli ve detaylı
+      let tableMessage = `📊 <b>${stockCode.toUpperCase()} - PİYASA DERİNLİĞİ</b>
 
-💰 <b>Mevcut:</b> ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)
+💰 <b>Mevcut Fiyat:</b> ${stockPrice.price.toFixed(2)} TL
+📈 <b>Değişim:</b> ${stockPrice.change > 0 ? "+" : ""}${stockPrice.change.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)
+📊 <b>Hacim:</b> ${stockPrice.volume.toLocaleString()}
 
-<code>┌─────┬────────┬────────┬────────┬────────┬─────┐
-│ EMİR│  ADET  │  ALIŞ  │  SATIŞ │  ADET  │EMİR │
-├─────┼────────┼────────┼────────┼────────┼─────┤`
+<code>╔═════╦════════╦════════╦════════╦════════╦═════╗
+║ EMİR║  ADET  ║  ALIŞ  ║  SATIŞ ║  ADET  ║EMİR ║
+╠═════╬════════╬════════╬════════╬════════╬═════╣`
 
-      // İlk 15 seviye
-      for (let i = 0; i < Math.min(15, Math.max(depthData.bids.length, depthData.asks.length)); i++) {
+      // İlk 20 seviye - Daha detaylı
+      for (let i = 0; i < Math.min(20, Math.max(depthData.bids.length, depthData.asks.length)); i++) {
         const bid = depthData.bids[i]
         const ask = depthData.asks[i]
 
@@ -305,14 +247,27 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         const askOrder = ask ? (i + 1).toString().padStart(4) : "    "
 
         tableMessage += `
-│${bidOrder} │${bidQuantity}│${bidPrice}│${askPrice}│${askQuantity}│${askOrder} │`
+║${bidOrder} ║${bidQuantity}║${bidPrice}║${askPrice}║${askQuantity}║${askOrder} ║`
       }
 
       tableMessage += `
-└─────┴────────┴────────┴────────┴────────┴─────┘</code>
+╚═════╩════════╩════════╩════════╩════════╩═════╝</code>
+
+🟢 <b>ALIŞ EMİRLERİ:</b> ${depthData.bids.length} kademe
+🔴 <b>SATIŞ EMİRLERİ:</b> ${depthData.asks.length} kademe
+
+📊 <b>En İyi Fiyatlar:</b>
+• En Yüksek Alış: ${depthData.bids[0]?.price.toFixed(2)} TL
+• En Düşük Satış: ${depthData.asks[0]?.price.toFixed(2)} TL
+• Spread: ${((depthData.asks[0]?.price || 0) - (depthData.bids[0]?.price || 0)).toFixed(2)} TL
 
 🤖 <b>@BorsaAnaliz_Bot</b> - Profesyonel Borsa Analizi
-⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}`
+⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}
+
+💡 <b>Diğer Komutlar:</b>
+• /teorik ${stockCode} - Teorik analiz
+• /temel ${stockCode} - Temel analiz  
+• /haber ${stockCode} - KAP haberleri`
 
       await this.bot.sendMessage(chatId, tableMessage)
     } catch (error) {
@@ -342,17 +297,19 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       const difference = theoreticalPrice - stockPrice.price
       const diffPercent = (difference / stockPrice.price) * 100
 
-      return `📈 <b>${stockCode.toUpperCase()} - Teorik Analiz</b>
+      return `📈 <b>${stockCode.toUpperCase()} - TEORİK ANALİZ</b>
 
-<b>Mevcut Fiyat:</b> ${stockPrice.price.toFixed(2)} TL
-<b>Teorik Fiyat:</b> ${theoreticalPrice.toFixed(2)} TL
-<b>Fark:</b> ${difference > 0 ? "+" : ""}${difference.toFixed(2)} TL (${diffPercent > 0 ? "+" : ""}${diffPercent.toFixed(2)}%)
+💰 <b>Mevcut Fiyat:</b> ${stockPrice.price.toFixed(2)} TL
+🎯 <b>Teorik Fiyat:</b> ${theoreticalPrice.toFixed(2)} TL
+📊 <b>Fark:</b> ${difference > 0 ? "+" : ""}${difference.toFixed(2)} TL (${diffPercent > 0 ? "+" : ""}${diffPercent.toFixed(2)}%)
 
-<b>Günlük Veriler:</b>
-• Açılış: ${stockPrice.open.toFixed(2)} TL
-• En Yüksek: ${stockPrice.high.toFixed(2)} TL  
-• En Düşük: ${stockPrice.low.toFixed(2)} TL
-• Hacim: ${stockPrice.volume.toLocaleString()}
+📈 <b>Günlük Veriler:</b>
+• 🔓 Açılış: ${stockPrice.open.toFixed(2)} TL
+• ⬆️ En Yüksek: ${stockPrice.high.toFixed(2)} TL  
+• ⬇️ En Düşük: ${stockPrice.low.toFixed(2)} TL
+• 📊 Hacim: ${stockPrice.volume.toLocaleString()}
+
+${diffPercent > 1 ? "🟢 <b>Pozitif Sinyal</b>" : diffPercent < -1 ? "🔴 <b>Negatif Sinyal</b>" : "🟡 <b>Nötr Sinyal</b>"}
 
 🤖 <b>@BorsaAnaliz_Bot</b> - Profesyonel Analiz
 <i>Son güncelleme: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}</i>`
@@ -371,20 +328,22 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         return `❌ ${stockCode} için temel analiz verisi alınamadı.`
       }
 
-      return `🏢 <b>${stockCode.toUpperCase()} - Temel Analiz</b>
+      return `🏢 <b>${stockCode.toUpperCase()} - TEMEL ANALİZ</b>
 
-<b>Şirket:</b> ${companyInfo.name}
-<b>Sektör:</b> ${companyInfo.sector}
-<b>Mevcut Fiyat:</b> ${stockPrice.price.toFixed(2)} TL
+🏭 <b>Şirket:</b> ${companyInfo.name}
+🏗️ <b>Sektör:</b> ${companyInfo.sector}
+💰 <b>Mevcut Fiyat:</b> ${stockPrice.price.toFixed(2)} TL
 
-<b>Finansal Oranlar:</b>
-• F/K Oranı: ${companyInfo.peRatio?.toFixed(2)}
-• PD/DD Oranı: ${companyInfo.pbRatio?.toFixed(2)}
-• Temettü Verimi: %${companyInfo.dividendYield?.toFixed(2)}
+📊 <b>Finansal Oranlar:</b>
+• 📈 F/K Oranı: ${companyInfo.peRatio?.toFixed(2)}
+• 📉 PD/DD Oranı: ${companyInfo.pbRatio?.toFixed(2)}
+• 💵 Temettü Verimi: %${companyInfo.dividendYield?.toFixed(2)}
 
-<b>Piyasa Verileri:</b>
-• Piyasa Değeri: ${(companyInfo.marketCap / 1000000).toFixed(0)}M TL
-• Günlük Hacim: ${stockPrice.volume.toLocaleString()}
+💹 <b>Piyasa Verileri:</b>
+• 🏦 Piyasa Değeri: ${(companyInfo.marketCap / 1000000).toFixed(0)}M TL
+• 📊 Günlük Hacim: ${stockPrice.volume.toLocaleString()}
+
+${companyInfo.peRatio && companyInfo.peRatio < 15 ? "🟢 <b>Değerli Görünüyor</b>" : companyInfo.peRatio && companyInfo.peRatio > 25 ? "🔴 <b>Pahalı Görünüyor</b>" : "🟡 <b>Normal Değerleme</b>"}
 
 🤖 <b>@BorsaAnaliz_Bot</b> - Temel Analiz
 <i>Son güncelleme: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}</i>`
@@ -404,12 +363,12 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 🤖 <b>@BorsaAnaliz_Bot</b> - Haber Servisi`
       }
 
-      let message = `📰 <b>${stockCode.toUpperCase()} - Son Haberler</b>\n\n`
+      let message = `📰 <b>${stockCode.toUpperCase()} - SON HABERLER</b>\n\n`
 
       news.slice(0, 3).forEach((item, index) => {
         const date = new Date(item.date).toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })
-        message += `<b>${index + 1}. ${item.title}</b>\n`
-        message += `📅 ${date} | ${item.source}\n`
+        message += `📄 <b>${index + 1}. ${item.title}</b>\n`
+        message += `📅 ${date} | 📰 ${item.source}\n`
         message += `${item.content}\n\n`
       })
 
