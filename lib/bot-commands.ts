@@ -1,7 +1,7 @@
 import { Database } from "./database"
 import type { TelegramBot } from "./telegram"
 import { stockAPI } from "./stock-api"
-import { PuppeteerImageGenerator, type DepthImageData } from "./puppeteer-image-generator"
+import { VercelOGGenerator, type DepthImageData } from "./vercel-og-generator"
 
 export class BotCommands {
   private bot: TelegramBot
@@ -173,21 +173,18 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       const keyboard = {
         inline_keyboard: [
           [
-            { text: "🎭 Puppeteer Görsel", callback_data: `derinlik_${stockCode}` },
+            { text: "🎨 Vercel OG Görsel", callback_data: `derinlik_${stockCode}` },
+            { text: "📊 ASCII Tablo", callback_data: `tablo_${stockCode}` },
+          ],
+          [
             { text: "📈 Teorik", callback_data: `teorik_${stockCode}` },
-          ],
-          [
             { text: "📋 Temel", callback_data: `temel_${stockCode}` },
-            { text: "🏢 AKD", callback_data: `akd_${stockCode}` },
           ],
           [
-            { text: "💱 Takas", callback_data: `takas_${stockCode}` },
             { text: "📰 Haberler", callback_data: `haber_${stockCode}` },
-          ],
-          [
             { text: "⭐ Favoriye Ekle", callback_data: `favori_ekle_${stockCode}` },
-            { text: "🔄 Yenile", callback_data: `yenile_${stockCode}` },
           ],
+          [{ text: "🔄 Yenile", callback_data: `yenile_${stockCode}` }],
         ],
       }
 
@@ -202,15 +199,16 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 
   async getDepthImage(stockCode: string, chatId: number): Promise<void> {
     try {
-      console.log(`🎭 Generating Puppeteer PNG depth image for ${stockCode}`)
+      console.log(`🎨 Generating Vercel OG depth image for ${stockCode}`)
 
       // Önce "görsel hazırlanıyor" mesajı gönder
       const loadingMessage = await this.bot.sendMessage(
         chatId,
-        `🎭 ${stockCode} profesyonel derinlik görseli Puppeteer ile hazırlanıyor...
+        `🎨 ${stockCode} profesyonel derinlik görseli Vercel OG ile hazırlanıyor...
 
-⚡ HTML → Browser → PNG
-🎯 %100 Okunabilir Garantili!`,
+⚡ Vercel Edge Runtime
+🎯 System Fonts - Garantili Okunabilir!
+🚀 Font Loading Problemi YOK!`,
       )
 
       const depthData = await stockAPI.getMarketDepth(stockCode)
@@ -231,28 +229,28 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         price: stockPrice.price,
         change: stockPrice.change,
         changePercent: stockPrice.changePercent,
-        bids: depthData.bids.slice(0, 22),
-        asks: depthData.asks.slice(0, 22),
+        bids: depthData.bids.slice(0, 15),
+        asks: depthData.asks.slice(0, 15),
         timestamp: new Date().toISOString(),
       }
 
       try {
-        // Puppeteer ile PNG oluştur
-        const pngBuffer = await PuppeteerImageGenerator.generateDepthPNG(imageData)
+        // Vercel OG ile PNG oluştur
+        const pngBuffer = await VercelOGGenerator.generateDepthPNG(imageData)
 
         // Yükleme mesajını sil
         await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
 
         // PNG'yi photo olarak gönder
         await this.bot.sendPhoto(chatId, pngBuffer, {
-          caption: `🎭 <b>${stockCode.toUpperCase()} - PUPPETEER DERİNLİK GÖRSELİ</b>
+          caption: `🎨 <b>${stockCode.toUpperCase()} - VERCEL OG DERİNLİK GÖRSELİ</b>
 
 💰 <b>Mevcut:</b> ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)
 
-🎯 <b>Puppeteer teknolojisi</b> - %100 okunabilir!
-📊 22 kademe derinlik analizi
-⚡ HTML → Browser → PNG
-🎨 Google Fonts + CSS3 + Retina Quality
+🚀 <b>Vercel OG teknolojisi</b> - System Fonts!
+📊 15 kademe derinlik analizi
+⚡ Edge Runtime optimized
+🎨 Font Loading Garantili!
 
 📈 <b>En İyi Fiyatlar:</b>
 • 🟢 En Yüksek Alış: ${depthData.bids[0]?.price.toFixed(2)} ₺
@@ -264,24 +262,24 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 • /temel ${stockCode} - Temel analiz  
 • /haber ${stockCode} - KAP haberleri
 
-🤖 <b>@BorsaAnaliz_Bot</b> - Puppeteer PNG Teknolojisi
+🤖 <b>@BorsaAnaliz_Bot</b> - Vercel OG Teknolojisi
 ⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}`,
           parse_mode: "HTML",
         })
 
-        console.log(`✅ Puppeteer PNG depth image sent for ${stockCode}`)
+        console.log(`✅ Vercel OG depth image sent for ${stockCode}`)
       } catch (imageError) {
-        console.error("Puppeteer PNG generation failed, falling back to table:", imageError)
+        console.error("Vercel OG generation failed, falling back to table:", imageError)
 
-        // Puppeteer oluşturulamazsa tablo formatında gönder
+        // Vercel OG oluşturulamazsa tablo formatında gönder
         await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
         await this.getDepthTable(stockCode, chatId)
       }
     } catch (error) {
-      console.error(`Error generating Puppeteer depth image for ${stockCode}:`, error)
+      console.error(`Error generating Vercel OG depth image for ${stockCode}:`, error)
       await this.bot.sendMessage(
         chatId,
-        `❌ ${stockCode} için Puppeteer derinlik görseli oluşturulurken bir hata oluştu.`,
+        `❌ ${stockCode} için Vercel OG derinlik görseli oluşturulurken bir hata oluştu.`,
       )
     }
   }
@@ -336,7 +334,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 • En Düşük Satış: ${depthData.asks[0]?.price.toFixed(2)} TL
 • Spread: ${((depthData.asks[0]?.price || 0) - (depthData.bids[0]?.price || 0)).toFixed(2)} TL
 
-🤖 <b>@BorsaAnaliz_Bot</b> - Fallback Tablo (Puppeteer Yüklenemedi)
+🤖 <b>@BorsaAnaliz_Bot</b> - ASCII Tablo (Font Problemi Yok!)
 ⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}`
 
       await this.bot.sendMessage(chatId, tableMessage)
