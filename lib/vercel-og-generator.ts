@@ -13,8 +13,7 @@ export class VercelOGGenerator {
     try {
       console.log(`🎨 Generating Depth Chart for ${data.symbol}`)
 
-      // DOĞRU BASE URL HESAPLAMA
-      let baseUrl = "http://localhost:3000" // Default
+      let baseUrl = "http://localhost:3000"
 
       if (process.env.VERCEL_URL) {
         baseUrl = `https://${process.env.VERCEL_URL}`
@@ -24,10 +23,20 @@ export class VercelOGGenerator {
 
       console.log(`🌐 Using Base URL: ${baseUrl}`)
 
-      // ÖNCE TEST ROUTE'UNU DENE
+      // TRY SIMPLE DEPTH FIRST (no complex data)
       try {
-        console.log("🧪 Testing basic OG functionality...")
-        const testResponse = await fetch(`${baseUrl}/api/test-depth`, {
+        console.log("🔄 Trying simple depth route...")
+
+        const simpleParams = new URLSearchParams()
+        simpleParams.set("symbol", data.symbol)
+        simpleParams.set("price", data.price.toString())
+        simpleParams.set("changePercent", data.changePercent.toString())
+
+        const simpleUrl = `${baseUrl}/api/og/simple-depth?${simpleParams.toString()}`
+
+        console.log(`🚀 Simple depth URL: ${simpleUrl}`)
+
+        const simpleResponse = await fetch(simpleUrl, {
           method: "GET",
           headers: {
             "User-Agent": "TelegramBot/1.0",
@@ -36,83 +45,80 @@ export class VercelOGGenerator {
           signal: AbortSignal.timeout(10000),
         })
 
-        console.log(`🧪 Test response: ${testResponse.status}`)
+        console.log(`📡 Simple depth response: ${simpleResponse.status}`)
 
-        if (!testResponse.ok) {
-          console.error(`❌ Test route failed: ${testResponse.status}`)
-          throw new Error(`Test route failed: ${testResponse.status}`)
+        if (simpleResponse.ok) {
+          const contentType = simpleResponse.headers.get("content-type")
+          if (contentType?.includes("image")) {
+            const arrayBuffer = await simpleResponse.arrayBuffer()
+            const buffer = Buffer.from(arrayBuffer)
+
+            if (buffer.length > 0) {
+              console.log(`✅ Simple depth chart generated: ${buffer.length} bytes`)
+              return buffer
+            }
+          }
         }
-      } catch (testError) {
-        console.error("❌ Test route error:", testError)
-        throw new Error(`OG system not working: ${testError}`)
+      } catch (simpleError) {
+        console.error("❌ Simple depth failed:", simpleError)
       }
 
-      // ASIL DEPTH CHART'I OLUŞTUR
-      const params = new URLSearchParams()
-      params.set("symbol", data.symbol)
-      params.set("price", data.price.toString())
-      params.set("changePercent", data.changePercent.toString())
-
-      // Sadece ilk 15 kademeyi gönder (URL limit)
-      const limitedBids = data.bids.slice(0, 15)
-      const limitedAsks = data.asks.slice(0, 15)
-
-      params.set("bids", encodeURIComponent(JSON.stringify(limitedBids)))
-      params.set("asks", encodeURIComponent(JSON.stringify(limitedAsks)))
-
-      const ogUrl = `${baseUrl}/api/og/depth?${params.toString()}`
-
-      console.log(`🚀 Calling Depth OG: ${ogUrl.substring(0, 100)}...`)
-
-      const response = await fetch(ogUrl, {
-        method: "GET",
-        headers: {
-          "User-Agent": "TelegramBot/1.0",
-          Accept: "image/png,image/*,*/*",
-          "Cache-Control": "no-cache",
-        },
-        signal: AbortSignal.timeout(15000),
-      })
-
-      console.log(`📡 Depth response: ${response.status}`)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`❌ Depth OG failed: ${response.status}`)
-        console.error(`❌ Error: ${errorText.substring(0, 200)}`)
-        throw new Error(`Depth OG failed: ${response.status}`)
-      }
-
-      const contentType = response.headers.get("content-type")
-      if (!contentType?.includes("image")) {
-        throw new Error(`Not an image: ${contentType}`)
-      }
-
-      const arrayBuffer = await response.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
-
-      console.log(`✅ Depth chart generated: ${buffer.length} bytes`)
-
-      if (buffer.length === 0) {
-        throw new Error("Empty buffer")
-      }
-
-      return buffer
-    } catch (error) {
-      console.error("❌ Depth chart generation error:", error)
-
-      // FALLBACK: Basit OG kullan
+      // FALLBACK: Try complex depth with data
       try {
-        console.log("🔄 Trying fallback simple OG...")
-        return await this.generateSimpleOG(data)
-      } catch (fallbackError) {
-        console.error("❌ Fallback also failed:", fallbackError)
-        throw new Error(`Both depth chart and fallback failed: ${error}`)
+        console.log("🔄 Trying complex depth route...")
+
+        const params = new URLSearchParams()
+        params.set("symbol", data.symbol)
+        params.set("price", data.price.toString())
+        params.set("changePercent", data.changePercent.toString())
+
+        // Limit data to prevent URL issues
+        const limitedBids = data.bids.slice(0, 10)
+        const limitedAsks = data.asks.slice(0, 10)
+
+        params.set("bids", encodeURIComponent(JSON.stringify(limitedBids)))
+        params.set("asks", encodeURIComponent(JSON.stringify(limitedAsks)))
+
+        const complexUrl = `${baseUrl}/api/og/depth?${params.toString()}`
+
+        console.log(`🚀 Complex depth URL: ${complexUrl.substring(0, 150)}...`)
+
+        const complexResponse = await fetch(complexUrl, {
+          method: "GET",
+          headers: {
+            "User-Agent": "TelegramBot/1.0",
+            Accept: "image/png,image/*,*/*",
+          },
+          signal: AbortSignal.timeout(15000),
+        })
+
+        console.log(`📡 Complex depth response: ${complexResponse.status}`)
+
+        if (complexResponse.ok) {
+          const contentType = complexResponse.headers.get("content-type")
+          if (contentType?.includes("image")) {
+            const arrayBuffer = await complexResponse.arrayBuffer()
+            const buffer = Buffer.from(arrayBuffer)
+
+            if (buffer.length > 0) {
+              console.log(`✅ Complex depth chart generated: ${buffer.length} bytes`)
+              return buffer
+            }
+          }
+        }
+      } catch (complexError) {
+        console.error("❌ Complex depth failed:", complexError)
       }
+
+      // FINAL FALLBACK: Basic OG
+      console.log("🔄 Using basic OG fallback...")
+      return await this.generateSimpleOG(data)
+    } catch (error) {
+      console.error("❌ All depth chart methods failed:", error)
+      throw error
     }
   }
 
-  // Basit fallback
   static async generateSimpleOG(data: DepthImageData): Promise<Buffer> {
     try {
       let baseUrl = "http://localhost:3000"
