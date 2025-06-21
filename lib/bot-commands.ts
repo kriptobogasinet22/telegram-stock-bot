@@ -1,6 +1,7 @@
 import { Database } from "./database"
 import type { TelegramBot } from "./telegram"
 import { stockAPI } from "./stock-api"
+import { VercelOGGenerator } from "./vercel-og-generator"
 
 export class BotCommands {
   private bot: TelegramBot
@@ -149,18 +150,21 @@ Artık @borsaozelderinlik_bot'u kullanabilirsiniz!`
         ? `\n\n💰 <b>Mevcut:</b> ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)`
         : ""
 
-      // Mobil uyumlu buton düzeni
+      // Mobil uyumlu buton düzeni - GÖRSEL DERINLIK EKLENDI
       const keyboard = {
         inline_keyboard: [
           [
             { text: "📊 Derinlik", callback_data: `derinlik_${stockCode}` },
-            { text: "📈 Teorik", callback_data: `teorik_${stockCode}` },
+            { text: "🖼️ Görsel Derinlik", callback_data: `gorsel_${stockCode}` },
           ],
           [
+            { text: "📈 Teorik", callback_data: `teorik_${stockCode}` },
             { text: "📋 Temel", callback_data: `temel_${stockCode}` },
-            { text: "🔧 Teknik", callback_data: `teknik_${stockCode}` },
           ],
-          [{ text: "🔄 Yenile Fiyat", callback_data: `yenile_${stockCode}` }],
+          [
+            { text: "🔧 Teknik", callback_data: `teknik_${stockCode}` },
+            { text: "🔄 Yenile", callback_data: `yenile_${stockCode}` },
+          ],
         ],
       }
 
@@ -236,7 +240,12 @@ Artık @borsaozelderinlik_bot'u kullanabilirsiniz!`
 
       // Yenile butonu ekle
       const keyboard = {
-        inline_keyboard: [[{ text: "🔄 Derinlik Yenile", callback_data: `derinlik_${stockCode}` }]],
+        inline_keyboard: [
+          [
+            { text: "🔄 Derinlik Yenile", callback_data: `derinlik_${stockCode}` },
+            { text: "🖼️ Görsel Derinlik", callback_data: `gorsel_${stockCode}` },
+          ],
+        ],
       }
 
       await this.bot.sendMessage(chatId, tableMessage, { reply_markup: keyboard })
@@ -244,6 +253,88 @@ Artık @borsaozelderinlik_bot'u kullanabilirsiniz!`
     } catch (error) {
       console.error(`Error generating depth analysis for ${stockCode}:`, error)
       await this.bot.sendMessage(chatId, `❌ ${stockCode} için derinlik analizi oluşturulurken hata oluştu.`)
+    }
+  }
+
+  // YENİ: Görsel Derinlik Analizi
+  async getVisualDepthAnalysis(stockCode: string, chatId: number): Promise<void> {
+    try {
+      console.log(`🖼️ Generating visual depth analysis for ${stockCode}`)
+
+      const loadingMessage = await this.bot.sendMessage(
+        chatId,
+        `🖼️ ${stockCode} görsel derinlik analizi hazırlanıyor...`,
+      )
+
+      const depthData = await stockAPI.getMarketDepth(stockCode)
+      const stockPrice = await stockAPI.getStockPrice(stockCode)
+
+      if (!depthData || !stockPrice) {
+        await this.bot.editMessageText(
+          chatId,
+          loadingMessage.result.message_id,
+          `❌ ${stockCode} için derinlik verisi alınamadı.`,
+        )
+        return
+      }
+
+      try {
+        // Görsel oluştur
+        const imageData = {
+          symbol: stockCode.toUpperCase(),
+          price: stockPrice.price,
+          change: stockPrice.change,
+          changePercent: stockPrice.changePercent,
+          bids: depthData.bids,
+          asks: depthData.asks,
+          timestamp: new Date().toISOString(),
+        }
+
+        console.log(`🎨 Generating depth chart image for ${stockCode}`)
+        const imageBuffer = await VercelOGGenerator.generateDepthChart(imageData)
+
+        // Loading mesajını sil
+        await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
+
+        // Görsel gönder
+        const caption = `🖼️ <b>${stockCode.toUpperCase()} - GÖRSEL PİYASA DERİNLİĞİ</b>
+
+💰 <b>Fiyat:</b> ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)
+🟢 <b>Alış Emirleri:</b> ${depthData.bids.length} kademe
+🔴 <b>Satış Emirleri:</b> ${depthData.asks.length} kademe
+📊 <b>Spread:</b> ${((depthData.asks[0]?.price || 0) - (depthData.bids[0]?.price || 0)).toFixed(2)} TL
+
+⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}`
+
+        const keyboard = {
+          inline_keyboard: [
+            [
+              { text: "🔄 Görsel Yenile", callback_data: `gorsel_${stockCode}` },
+              { text: "📊 Tablo Görünüm", callback_data: `derinlik_${stockCode}` },
+            ],
+          ],
+        }
+
+        await this.bot.sendPhoto(chatId, imageBuffer, {
+          caption,
+          parse_mode: "HTML",
+          reply_markup: keyboard,
+        })
+
+        console.log(`✅ Visual depth analysis sent for ${stockCode}`)
+      } catch (imageError) {
+        console.error(`❌ Image generation failed for ${stockCode}:`, imageError)
+
+        // Loading mesajını sil
+        await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
+
+        // Fallback: ASCII tablo gönder
+        await this.bot.sendMessage(chatId, `❌ Görsel oluşturulamadı. Tablo görünümü:`)
+        await this.getDepthAnalysis(stockCode, chatId)
+      }
+    } catch (error) {
+      console.error(`Error generating visual depth analysis for ${stockCode}:`, error)
+      await this.bot.sendMessage(chatId, `❌ ${stockCode} için görsel derinlik analizi oluşturulurken hata oluştu.`)
     }
   }
 
