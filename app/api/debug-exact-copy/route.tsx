@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og"
 export const runtime = "edge"
 
 export async function GET() {
-  // STEP 5'İN TAM KOPYASI - SADECE RENK DEĞİŞTİR
+  // STEP 5'İN TAM KOPYASI - SADECE RENK DEĞİŞTİRR
   return new ImageResponse(
     <div
       style={{
