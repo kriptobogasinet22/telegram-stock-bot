@@ -9,232 +9,116 @@ export interface DepthImageData {
 }
 
 export class ImageGenerator {
-  static async generateDepthImageHTML(data: DepthImageData): Promise<string> {
+  static async generateDepthSVG(data: DepthImageData): Promise<Buffer> {
     try {
-      return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body {
-              background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-              font-family: 'Courier New', monospace;
-              color: white;
-              width: 500px;
-              height: 700px;
-              overflow: hidden;
-              position: relative;
-              padding: 20px;
-            }
-            .container {
-              width: 100%;
-              height: 100%;
-              border: 3px solid #00d4ff;
-              border-radius: 12px;
-              background: rgba(0,0,0,0.8);
-              box-shadow: 0 0 30px rgba(0,212,255,0.3);
-            }
-            .header {
-              background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
-              padding: 20px;
-              border-radius: 8px 8px 0 0;
-              text-align: center;
-              box-shadow: 0 4px 15px rgba(0,212,255,0.4);
-            }
-            .symbol {
-              font-size: 28px;
-              font-weight: bold;
-              color: white;
-              text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-              margin-bottom: 8px;
-            }
-            .price-info {
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              gap: 20px;
-              margin-top: 10px;
-            }
-            .price {
-              font-size: 22px;
-              font-weight: bold;
-              color: white;
-              text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-            }
-            .change {
-              font-size: 18px;
-              font-weight: bold;
-              padding: 6px 12px;
-              border-radius: 8px;
-              text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-            }
-            .change.positive { 
-              color: #00ff88; 
-              background: rgba(0,255,136,0.2);
-              border: 2px solid #00ff88;
-            }
-            .change.negative { 
-              color: #ff4444; 
-              background: rgba(255,68,68,0.2);
-              border: 2px solid #ff4444;
-            }
-            
-            .table-container {
-              padding: 20px;
-              height: calc(100% - 180px);
-            }
-            
-            .table-header {
-              background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
-              padding: 15px 0;
-              border: 2px solid #00d4ff;
-              border-radius: 8px 8px 0 0;
-              display: grid;
-              grid-template-columns: 60px 80px 80px 80px 80px 60px;
-              gap: 2px;
-              font-size: 14px;
-              font-weight: bold;
-              text-align: center;
-              color: #00d4ff;
-              text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-            }
-            
-            .table-body {
-              background: rgba(0,0,0,0.4);
-              border: 2px solid #00d4ff;
-              border-top: none;
-              border-radius: 0 0 8px 8px;
-              max-height: 400px;
-              overflow: hidden;
-            }
-            
-            .table-row {
-              display: grid;
-              grid-template-columns: 60px 80px 80px 80px 80px 60px;
-              gap: 2px;
-              padding: 8px 0;
-              font-size: 12px;
-              text-align: center;
-              font-weight: bold;
-              border-bottom: 1px solid rgba(0,212,255,0.2);
-              text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-            }
-            
-            .table-row:nth-child(even) { 
-              background: rgba(52,73,94,0.3); 
-            }
-            .table-row:nth-child(odd) { 
-              background: rgba(44,62,80,0.3); 
-            }
-            
-            .bid { 
-              color: #00ff88; 
-              text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-            }
-            .ask { 
-              color: #ff4444; 
-              text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-            }
-            .neutral {
-              color: #ffffff;
-            }
-            
-            .footer {
-              position: absolute;
-              bottom: 20px;
-              left: 20px;
-              right: 20px;
-              background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
-              padding: 12px 20px;
-              border-radius: 8px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              box-shadow: 0 4px 15px rgba(0,212,255,0.4);
-            }
-            .footer-left {
-              font-size: 16px;
-              font-weight: bold;
-              color: white;
-              text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-            }
-            .footer-right {
-              font-size: 14px;
-              color: rgba(255,255,255,0.9);
-              text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-            }
-            .bot-brand {
-              position: absolute;
-              top: 25px;
-              right: 25px;
-              background: rgba(0,0,0,0.8);
-              color: #00d4ff;
-              padding: 8px 15px;
-              border-radius: 20px;
-              font-size: 12px;
-              font-weight: bold;
-              border: 2px solid #00d4ff;
-              text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-              box-shadow: 0 2px 10px rgba(0,212,255,0.3);
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="bot-brand">🤖 @BorsaAnaliz_Bot</div>
-            
-            <div class="header">
-              <div class="symbol">${data.symbol}</div>
-              <div class="price-info">
-                <div class="price">${data.price.toFixed(2)}₺</div>
-                <div class="change ${data.changePercent >= 0 ? "positive" : "negative"}">
-                  ${data.changePercent >= 0 ? "+" : ""}${data.changePercent.toFixed(2)}%
-                </div>
-              </div>
-            </div>
-            
-            <div class="table-container">
-              <div class="table-header">
-                <div>EMİR</div>
-                <div>ADET</div>
-                <div>ALIŞ</div>
-                <div>SATIŞ</div>
-                <div>ADET</div>
-                <div>EMİR</div>
-              </div>
-              
-              <div class="table-body">
-                ${Array.from({ length: Math.min(20, Math.max(data.bids.length, data.asks.length)) }, (_, i) => {
-                  const bid = data.bids[i]
-                  const ask = data.asks[i]
+      const timeText = new Date(data.timestamp).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })
+      const changeColor = data.changePercent >= 0 ? "#00ff88" : "#ff4444"
+      const changeSign = data.changePercent >= 0 ? "+" : ""
 
-                  return `
-                    <div class="table-row">
-                      <div class="bid">${bid ? i + 1 : ""}</div>
-                      <div class="bid">${bid ? this.formatNumber(bid.quantity) : ""}</div>
-                      <div class="bid">${bid ? bid.price.toFixed(2) : ""}</div>
-                      <div class="ask">${ask ? ask.price.toFixed(2) : ""}</div>
-                      <div class="ask">${ask ? this.formatNumber(ask.quantity) : ""}</div>
-                      <div class="ask">${ask ? i + 1 : ""}</div>
-                    </div>
-                  `
-                }).join("")}
-              </div>
-            </div>
-            
-            <div class="footer">
-              <div class="footer-left">${data.symbol} Piyasa Derinliği</div>
-              <div class="footer-right">${new Date(data.timestamp).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" }).split(" ")[1]}</div>
-            </div>
-          </div>
-        </body>
-        </html>
-      `
+      let svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="500" height="700" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3c72"/>
+      <stop offset="100%" style="stop-color:#2a5298"/>
+    </linearGradient>
+    <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d4ff"/>
+      <stop offset="100%" style="stop-color:#0099cc"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#00d4ff" flood-opacity="0.3"/>
+    </filter>
+    <style>
+      .title-text { font-family: 'Courier New', monospace; font-weight: bold; fill: white; text-anchor: middle; }
+      .price-text { font-family: 'Courier New', monospace; font-weight: bold; fill: white; text-anchor: middle; }
+      .change-text { font-family: 'Courier New', monospace; font-weight: bold; text-anchor: middle; }
+      .header-text { font-family: 'Courier New', monospace; font-weight: bold; fill: #00d4ff; text-anchor: middle; }
+      .bid-text { font-family: 'Courier New', monospace; font-weight: bold; fill: #00ff88; text-anchor: middle; }
+      .ask-text { font-family: 'Courier New', monospace; font-weight: bold; fill: #ff4444; text-anchor: middle; }
+      .neutral-text { font-family: 'Courier New', monospace; font-weight: bold; fill: white; text-anchor: middle; }
+      .footer-text { font-family: 'Courier New', monospace; font-weight: bold; fill: white; }
+      .brand-text { font-family: 'Courier New', monospace; font-weight: bold; fill: #00d4ff; text-anchor: middle; }
+    </style>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="500" height="700" fill="url(#bgGradient)"/>
+  
+  <!-- Main Container -->
+  <rect x="20" y="20" width="460" height="660" fill="rgba(0,0,0,0.8)" stroke="#00d4ff" stroke-width="3" rx="12" filter="url(#shadow)"/>
+  
+  <!-- Header -->
+  <rect x="30" y="30" width="440" height="80" fill="url(#headerGradient)" rx="8" filter="url(#shadow)"/>
+  
+  <!-- Bot Brand -->
+  <rect x="350" y="35" width="110" height="25" fill="rgba(0,0,0,0.8)" stroke="#00d4ff" stroke-width="2" rx="12"/>
+  <text x="405" y="52" class="brand-text" font-size="12">🤖 @BorsaBot</text>
+  
+  <!-- Stock Symbol -->
+  <text x="250" y="65" class="title-text" font-size="24">${data.symbol}</text>
+  
+  <!-- Price Info -->
+  <text x="180" y="95" class="price-text" font-size="18">${data.price.toFixed(2)}₺</text>
+  <rect x="280" y="78" width="80" height="22" fill="rgba(${data.changePercent >= 0 ? "0,255,136" : "255,68,68"},0.2)" stroke="${changeColor}" stroke-width="2" rx="6"/>
+  <text x="320" y="93" class="change-text" font-size="14" fill="${changeColor}">${changeSign}${data.changePercent.toFixed(2)}%</text>
+  
+  <!-- Table Header -->
+  <rect x="40" y="130" width="420" height="35" fill="rgba(52,73,94,0.8)" stroke="#00d4ff" stroke-width="2" rx="6"/>
+  <text x="70" y="152" class="header-text" font-size="12">EMİR</text>
+  <text x="140" y="152" class="header-text" font-size="12">ADET</text>
+  <text x="210" y="152" class="header-text" font-size="12">ALIŞ</text>
+  <text x="290" y="152" class="header-text" font-size="12">SATIŞ</text>
+  <text x="360" y="152" class="header-text" font-size="12">ADET</text>
+  <text x="430" y="152" class="header-text" font-size="12">EMİR</text>
+  
+  <!-- Table Body Background -->
+  <rect x="40" y="165" width="420" height="400" fill="rgba(0,0,0,0.4)" stroke="#00d4ff" stroke-width="2" rx="0 0 6 6"/>
+  
+  <!-- Table Rows -->`
+
+      // Add table rows
+      for (let i = 0; i < Math.min(20, Math.max(data.bids.length, data.asks.length)); i++) {
+        const bid = data.bids[i]
+        const ask = data.asks[i]
+        const yPos = 185 + i * 20
+
+        // Row background (alternating)
+        const bgColor = i % 2 === 0 ? "rgba(52,73,94,0.3)" : "rgba(44,62,80,0.3)"
+        svg += `
+  <rect x="40" y="${yPos - 10}" width="420" height="20" fill="${bgColor}"/>`
+
+        // Bid data
+        if (bid) {
+          svg += `
+  <text x="70" y="${yPos + 3}" class="bid-text" font-size="11">${i + 1}</text>
+  <text x="140" y="${yPos + 3}" class="bid-text" font-size="11">${this.formatNumber(bid.quantity)}</text>
+  <text x="210" y="${yPos + 3}" class="bid-text" font-size="11">${bid.price.toFixed(2)}</text>`
+        }
+
+        // Ask data
+        if (ask) {
+          svg += `
+  <text x="290" y="${yPos + 3}" class="ask-text" font-size="11">${ask.price.toFixed(2)}</text>
+  <text x="360" y="${yPos + 3}" class="ask-text" font-size="11">${this.formatNumber(ask.quantity)}</text>
+  <text x="430" y="${yPos + 3}" class="ask-text" font-size="11">${i + 1}</text>`
+        }
+      }
+
+      svg += `
+  
+  <!-- Footer -->
+  <rect x="30" y="620" width="440" height="50" fill="url(#headerGradient)" rx="8" filter="url(#shadow)"/>
+  <text x="50" y="645" class="footer-text" font-size="16">${data.symbol} Piyasa Derinliği</text>
+  <text x="50" y="660" class="footer-text" font-size="12">📊 25 kademe analizi</text>
+  <text x="420" y="645" class="footer-text" font-size="14" text-anchor="end">${timeText.split(" ")[1]}</text>
+  <text x="420" y="660" class="footer-text" font-size="12" text-anchor="end">@BorsaAnaliz_Bot</text>
+  
+</svg>`
+
+      return Buffer.from(svg, "utf-8")
     } catch (error) {
-      console.error("Error generating HTML depth image:", error)
+      console.error("Error generating SVG depth image:", error)
       throw error
     }
   }
@@ -248,65 +132,10 @@ export class ImageGenerator {
     return num.toLocaleString()
   }
 
-  // HTML'i screenshot olarak çekmek için
-  static async convertHtmlToImage(htmlContent: string): Promise<Buffer> {
-    try {
-      // Puppeteer benzeri bir servis kullanacağız
-      // Bu örnekte htmlcsstoimage.com API'sini kullanabiliriz
-
-      const response = await fetch("https://hcti.io/v1/image", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.HTMLCSS_API_KEY || ""}`,
-        },
-        body: JSON.stringify({
-          html: htmlContent,
-          css: "",
-          google_fonts: "Courier New",
-          viewport_width: 500,
-          viewport_height: 700,
-          device_scale: 2,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("HTML to Image conversion failed")
-      }
-
-      const result = await response.json()
-
-      // Resmi indir
-      const imageResponse = await fetch(result.url)
-      const imageBuffer = await imageResponse.arrayBuffer()
-
-      return Buffer.from(imageBuffer)
-    } catch (error) {
-      console.error("Error converting HTML to image:", error)
-
-      // Fallback: Basit bir placeholder image oluştur
-      return this.createPlaceholderImage()
-    }
-  }
-
-  static async createPlaceholderImage(): Promise<Buffer> {
-    // SVG placeholder oluştur
-    const svg = `
-      <svg width="500" height="700" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#1e3c72"/>
-            <stop offset="100%" style="stop-color:#2a5298"/>
-          </linearGradient>
-        </defs>
-        <rect width="500" height="700" fill="url(#bg)"/>
-        <rect x="20" y="20" width="460" height="660" fill="rgba(0,0,0,0.8)" stroke="#00d4ff" stroke-width="3" rx="12"/>
-        <text x="250" y="100" text-anchor="middle" fill="#00d4ff" font-family="Courier New" font-size="24" font-weight="bold">Derinlik Tablosu</text>
-        <text x="250" y="140" text-anchor="middle" fill="white" font-family="Courier New" font-size="18">Görsel hazırlanıyor...</text>
-        <text x="250" y="650" text-anchor="middle" fill="#00d4ff" font-family="Courier New" font-size="14">🤖 @BorsaAnaliz_Bot</text>
-      </svg>
-    `
-
-    return Buffer.from(svg, "utf-8")
+  // Basit PNG placeholder (eğer SVG çalışmazsa)
+  static async createSimplePNG(): Promise<Buffer> {
+    // Base64 encoded 1x1 transparent PNG
+    const base64PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+    return Buffer.from(base64PNG, "base64")
   }
 }
