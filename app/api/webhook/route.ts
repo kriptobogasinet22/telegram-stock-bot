@@ -88,10 +88,7 @@ Artık botu kullanabilirsiniz! İsteğiniz admin tarafından değerlendirilecek.
         await commands.checkMembership(userId, chatId)
       } else if (data.startsWith("derinlik_")) {
         const stockCode = data.replace("derinlik_", "")
-        await commands.getDepthTable(stockCode, chatId)
-      } else if (data.startsWith("derinlik_tablo_")) {
-        const stockCode = data.replace("derinlik_tablo_", "")
-        await commands.getDepthTable(stockCode, chatId)
+        await commands.getDepthImage(stockCode, chatId)
       } else if (data.startsWith("teorik_")) {
         const stockCode = data.replace("teorik_", "")
         const analysis = await commands.getTheoreticalAnalysis(stockCode)
@@ -145,7 +142,7 @@ Artık botu kullanabilirsiniz! İsteğiniz admin tarafından değerlendirilecek.
         await commands.handleStart(userId, chatId, message.from!)
       } else if (text.startsWith("/derinlik ")) {
         const stockCode = text.replace("/derinlik ", "").toUpperCase()
-        await commands.getDepthTable(stockCode, chatId)
+        await commands.getDepthImage(stockCode, chatId)
       } else if (text.startsWith("/teorik ")) {
         const stockCode = text.replace("/teorik ", "").toUpperCase()
         const analysis = await commands.getTheoreticalAnalysis(stockCode)
