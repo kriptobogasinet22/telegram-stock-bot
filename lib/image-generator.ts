@@ -1,5 +1,3 @@
-import { createCanvas } from "canvas"
-
 export interface DepthImageData {
   symbol: string
   price: number
@@ -11,207 +9,254 @@ export interface DepthImageData {
 }
 
 export class ImageGenerator {
-  static async generateDepthImage(data: DepthImageData): Promise<Buffer> {
+  static async generateDepthImageSVG(data: DepthImageData): Promise<string> {
     try {
-      // Canvas boyutları
       const width = 800
       const height = 1000
-      const canvas = createCanvas(width, height)
-      const ctx = canvas.getContext("2d")
+      
+      // SVG başlangıcı
+      let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <style>
+            .bg { fill: #1a1a1a; }
+            .title { fill: #00d4ff; font-family: Arial, sans-serif; font-size: 32px; font-weight: bold; }
+            .price { fill: #ffffff; font-family: Arial, sans-serif; font-size: 28px; font-weight: bold; }
+            .change-positive { fill: #00ff88; font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; }
+            .change-negative { fill: #ff4444; font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; }
+            .header { fill: #666666; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; }
+            .bid { fill: #00aa44; font-family: Arial, sans-serif; font-size: 14px; }
+            .ask { fill: #dd3333; font-family: Arial, sans-serif; font-size: 14px; }
+            .footer { fill: #666666; font-family: Arial, sans-serif; font-size: 14px; }
+            .timestamp { fill: #888888; font-family: Arial, sans-serif; font-size: 12px; }
+            .brand { fill: #00d4ff; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; }
+          </style>
+        </defs>
+        
+        <!-- Arka plan -->
+        <rect width="${width}" height="${height}" class="bg"/>
+        
+        <!-- Başlık -->
+        <text x="50" y="60" class="title">${data.symbol}</text>
+        <text x="200" y="60" class="price">${data.price.toFixed(2)}₺</text>
+        <text x="350" y="60" class="${data.changePercent >= 0 ? 'change-positive' : 'change-negative'}">${data.changePercent >= 0 ? '+' : ''}${data.changePercent.toFixed(2)}%</text>
+        
+        <!-- Tablo başlıkları -->
+        <text x="50" y="120" class="header">EMİR</text>
+        <text x="120" y="120" class="header">ADET</text>
+        <text x="200" y="120" class="header">ALIŞ</text>
+        <text x="320" y="120" class="header">SATIŞ</text>
+        <text x="400" y="120" class="header">ADET</text>
+        <text x="480" y="120" class="header">EMİR</text>
+        
+        <!-- Çizgi -->
+        <line x1="50" y1="130" x2="550" y2="130" stroke="#333333" stroke-width="1"/>
+      `
 
-      // Arka plan
-      ctx.fillStyle = "#1a1a1a"
-      ctx.fillRect(0, 0, width, height)
-
-      // Başlık bölümü
-      ctx.fillStyle = "#00d4ff"
-      ctx.font = "bold 32px Arial"
-      ctx.fillText(data.symbol, 50, 60)
-
-      // Fiyat bilgisi
-      ctx.fillStyle = "#ffffff"
-      ctx.font = "bold 28px Arial"
-      ctx.fillText(`${data.price.toFixed(2)}₺`, 200, 60)
-
-      // Değişim yüzdesi
-      const changeColor = data.changePercent >= 0 ? "#00ff88" : "#ff4444"
-      ctx.fillStyle = changeColor
-      ctx.font = "bold 24px Arial"
-      const changeText = `${data.changePercent >= 0 ? "+" : ""}${data.changePercent.toFixed(2)}%`
-      ctx.fillText(changeText, 350, 60)
-
-      // Tablo başlıkları
-      const headerY = 120
-      ctx.fillStyle = "#666666"
-      ctx.font = "bold 16px Arial"
-
-      // Sol taraf başlıkları (Alış emirleri)
-      ctx.fillText("EMİR", 50, headerY)
-      ctx.fillText("ADET", 120, headerY)
-      ctx.fillText("ALIŞ", 200, headerY)
-
-      // Sağ taraf başlıkları (Satış emirleri)
-      ctx.fillText("SATIŞ", 320, headerY)
-      ctx.fillText("ADET", 400, headerY)
-      ctx.fillText("EMİR", 480, headerY)
-
-      // Çizgi çizme
-      ctx.strokeStyle = "#333333"
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.moveTo(50, headerY + 10)
-      ctx.lineTo(550, headerY + 10)
-      ctx.stroke()
-
-      // Derinlik verilerini çiz
-      const startY = headerY + 30
+      // Derinlik verilerini ekle
+      const startY = 150
       const rowHeight = 25
       const maxRows = Math.min(25, Math.max(data.bids.length, data.asks.length))
 
       for (let i = 0; i < maxRows; i++) {
         const y = startY + i * rowHeight
 
-        // Alış emirleri (sol taraf) - yeşil tonları
+        // Alış emirleri (sol taraf)
         if (i < data.bids.length) {
           const bid = data.bids[i]
-          ctx.fillStyle = "#00aa44"
-          ctx.font = "14px Arial"
-
-          // Emir sırası
-          ctx.fillText((i + 1).toString(), 50, y)
-
-          // Adet
-          ctx.fillText(bid.quantity.toLocaleString(), 120, y)
-
-          // Fiyat
-          ctx.fillText(bid.price.toFixed(2), 200, y)
+          svg += `
+            <text x="50" y="${y}" class="bid">${i + 1}</text>
+            <text x="120" y="${y}" class="bid">${bid.quantity.toLocaleString()}</text>
+            <text x="200" y="${y}" class="bid">${bid.price.toFixed(2)}</text>
+          `
         }
 
-        // Satış emirleri (sağ taraf) - kırmızı tonları
+        // Satış emirleri (sağ taraf)
         if (i < data.asks.length) {
           const ask = data.asks[i]
-          ctx.fillStyle = "#dd3333"
-          ctx.font = "14px Arial"
-
-          // Fiyat
-          ctx.fillText(ask.price.toFixed(2), 320, y)
-
-          // Adet
-          ctx.fillText(ask.quantity.toLocaleString(), 400, y)
-
-          // Emir sırası
-          ctx.fillText((i + 1).toString(), 480, y)
+          svg += `
+            <text x="320" y="${y}" class="ask">${ask.price.toFixed(2)}</text>
+            <text x="400" y="${y}" class="ask">${ask.quantity.toLocaleString()}</text>
+            <text x="480" y="${y}" class="ask">${i + 1}</text>
+          `
         }
       }
 
       // Alt bilgi
       const footerY = height - 100
-      ctx.fillStyle = "#666666"
-      ctx.font = "14px Arial"
-      ctx.fillText(`${data.symbol} Piyasa Derinliği`, 50, footerY)
-
-      // Zaman damgası
-      ctx.fillStyle = "#888888"
-      ctx.font = "12px Arial"
       const timeText = new Date(data.timestamp).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })
-      ctx.fillText(`Son güncelleme: ${timeText}`, 50, footerY + 25)
+      
+      svg += `
+        <text x="50" y="${footerY}" class="footer">${data.symbol} Piyasa Derinliği</text>
+        <text x="50" y="${footerY + 25}" class="timestamp">Son güncelleme: ${timeText}</text>
+        <text x="${width - 200}" y="${footerY}" class="brand">Borsa Analiz Bot</text>
+      </svg>`
 
-      // Logo/Marka (isteğe bağlı)
-      ctx.fillStyle = "#00d4ff"
-      ctx.font = "bold 16px Arial"
-      ctx.fillText("Borsa Analiz Bot", width - 200, footerY)
-
-      // Canvas'ı buffer'a çevir
-      return canvas.toBuffer("image/png")
+      return svg
     } catch (error) {
-      console.error("Error generating depth image:", error)
+      console.error("Error generating SVG depth image:", error)
       throw error
     }
   }
 
-  static async generateSimpleDepthImage(data: DepthImageData): Promise<Buffer> {
+  static async generateDepthHTML(data: DepthImageData): Promise<string> {
     try {
-      const width = 600
-      const height = 800
-      const canvas = createCanvas(width, height)
-      const ctx = canvas.getContext("2d")
-
-      // Arka plan gradyanı
-      const gradient = ctx.createLinearGradient(0, 0, 0, height)
-      gradient.addColorStop(0, "#2a2a2a")
-      gradient.addColorStop(1, "#1a1a1a")
-      ctx.fillStyle = gradient
-      ctx.fillRect(0, 0, width, height)
-
-      // Başlık
-      ctx.fillStyle = "#00d4ff"
-      ctx.font = "bold 28px Arial"
-      ctx.textAlign = "center"
-      ctx.fillText(`${data.symbol} - 25 Kademe Derinlik`, width / 2, 50)
-
-      // Fiyat bilgisi
-      ctx.fillStyle = "#ffffff"
-      ctx.font = "bold 20px Arial"
-      ctx.fillText(`Mevcut: ${data.price.toFixed(2)}₺`, width / 2, 80)
-
-      const changeColor = data.changePercent >= 0 ? "#00ff88" : "#ff4444"
-      ctx.fillStyle = changeColor
-      ctx.font = "16px Arial"
-      const changeText = `(${data.changePercent >= 0 ? "+" : ""}${data.changePercent.toFixed(2)}%)`
-      ctx.fillText(changeText, width / 2, 105)
-
-      // Tablo başlıkları
-      ctx.fillStyle = "#cccccc"
-      ctx.font = "bold 14px Arial"
-      ctx.textAlign = "left"
-
-      const headerY = 150
-      ctx.fillText("ALIŞ EMİRLERİ", 50, headerY)
-      ctx.fillText("SATIŞ EMİRLERİ", 320, headerY)
-
-      // Çizgi
-      ctx.strokeStyle = "#444444"
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.moveTo(50, headerY + 10)
-      ctx.lineTo(550, headerY + 10)
-      ctx.stroke()
-
-      // Derinlik verileri
-      const startY = headerY + 30
-      const rowHeight = 20
-      const maxRows = Math.min(15, Math.max(data.bids.length, data.asks.length))
-
-      ctx.font = "12px Arial"
-
-      for (let i = 0; i < maxRows; i++) {
-        const y = startY + i * rowHeight
-
-        // Alış emirleri
-        if (i < data.bids.length) {
-          const bid = data.bids[i]
-          ctx.fillStyle = "#00aa44"
-          ctx.fillText(`${bid.price.toFixed(2)} - ${bid.quantity.toLocaleString()}`, 50, y)
-        }
-
-        // Satış emirleri
-        if (i < data.asks.length) {
-          const ask = data.asks[i]
-          ctx.fillStyle = "#dd3333"
-          ctx.fillText(`${ask.price.toFixed(2)} - ${ask.quantity.toLocaleString()}`, 320, y)
-        }
-      }
-
-      // Alt bilgi
-      ctx.fillStyle = "#888888"
-      ctx.font = "12px Arial"
-      ctx.textAlign = "center"
       const timeText = new Date(data.timestamp).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })
-      ctx.fillText(`Son güncelleme: ${timeText}`, width / 2, height - 30)
-
-      return canvas.toBuffer("image/png")
+      
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body {
+              margin: 0;
+              padding: 20px;
+              background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+              font-family: 'Arial', sans-serif;
+              color: white;
+              width: 760px;
+              height: 960px;
+            }
+            .container {
+              background: #1a1a1a;
+              border-radius: 10px;
+              padding: 30px;
+              box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            }
+            .header {
+              display: flex;
+              align-items: center;
+              gap: 20px;
+              margin-bottom: 30px;
+              padding-bottom: 20px;
+              border-bottom: 2px solid #333;
+            }
+            .symbol {
+              font-size: 36px;
+              font-weight: bold;
+              color: #00d4ff;
+            }
+            .price {
+              font-size: 32px;
+              font-weight: bold;
+              color: white;
+            }
+            .change {
+              font-size: 24px;
+              font-weight: bold;
+              padding: 5px 15px;
+              border-radius: 20px;
+            }
+            .change.positive {
+              color: #00ff88;
+              background: rgba(0, 255, 136, 0.1);
+            }
+            .change.negative {
+              color: #ff4444;
+              background: rgba(255, 68, 68, 0.1);
+            }
+            .depth-table {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 30px;
+              margin: 30px 0;
+            }
+            .bids, .asks {
+              background: rgba(255,255,255,0.02);
+              border-radius: 8px;
+              padding: 20px;
+            }
+            .section-title {
+              font-size: 18px;
+              font-weight: bold;
+              margin-bottom: 15px;
+              padding-bottom: 10px;
+              border-bottom: 1px solid #333;
+            }
+            .bids .section-title {
+              color: #00aa44;
+            }
+            .asks .section-title {
+              color: #dd3333;
+            }
+            .depth-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 8px 0;
+              border-bottom: 1px solid rgba(255,255,255,0.05);
+              font-size: 14px;
+            }
+            .depth-row:last-child {
+              border-bottom: none;
+            }
+            .bids .depth-row {
+              color: #00aa44;
+            }
+            .asks .depth-row {
+              color: #dd3333;
+            }
+            .footer {
+              margin-top: 40px;
+              padding-top: 20px;
+              border-top: 1px solid #333;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              font-size: 14px;
+              color: #888;
+            }
+            .brand {
+              color: #00d4ff;
+              font-weight: bold;
+              font-size: 16px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="symbol">${data.symbol}</div>
+              <div class="price">${data.price.toFixed(2)}₺</div>
+              <div class="change ${data.changePercent >= 0 ? 'positive' : 'negative'}">
+                ${data.changePercent >= 0 ? '+' : ''}${data.changePercent.toFixed(2)}%
+              </div>
+            </div>
+            
+            <div class="depth-table">
+              <div class="bids">
+                <div class="section-title">🟢 ALIŞ EMİRLERİ</div>
+                ${data.bids.slice(0, 15).map((bid, index) => `
+                  <div class="depth-row">
+                    <span>${bid.price.toFixed(2)}</span>
+                    <span>${bid.quantity.toLocaleString()}</span>
+                  </div>
+                `).join('')}
+              </div>
+              
+              <div class="asks">
+                <div class="section-title">🔴 SATIŞ EMİRLERİ</div>
+                ${data.asks.slice(0, 15).map((ask, index) => `
+                  <div class="depth-row">
+                    <span>${ask.price.toFixed(2)}</span>
+                    <span>${ask.quantity.toLocaleString()}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            
+            <div class="footer">
+              <div>
+                <div>${data.symbol} Piyasa Derinliği</div>
+                <div>Son güncelleme: ${timeText}</div>
+              </div>
+              <div class="brand">Borsa Analiz Bot</div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
     } catch (error) {
-      console.error("Error generating simple depth image:", error)
+      console.error("Error generating HTML depth image:", error)
       throw error
     }
   }
