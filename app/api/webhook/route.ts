@@ -90,9 +90,9 @@ Artık botu kullanabilirsiniz! İsteğiniz admin tarafından değerlendirilecek.
         const stockCode = data.replace("derinlik_", "")
         const analysis = await commands.getDepthAnalysis(stockCode)
         await bot.sendMessage(chatId, analysis)
-      } else if (data.startsWith("derinlik_gorsel_")) {
-        const stockCode = data.replace("derinlik_gorsel_", "")
-        await commands.getDepthImage(stockCode, chatId)
+      } else if (data.startsWith("derinlik_tablo_")) {
+        const stockCode = data.replace("derinlik_tablo_", "")
+        await commands.getDepthTable(stockCode, chatId)
       } else if (data.startsWith("teorik_")) {
         const stockCode = data.replace("teorik_", "")
         const analysis = await commands.getTheoreticalAnalysis(stockCode)
