@@ -202,7 +202,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 
   async getDepthImage(stockCode: string, chatId: number): Promise<void> {
     try {
-      console.log(`🖼️ Generating PNG depth image for ${stockCode}`)
+      console.log(`🖼️ Generating readable PNG depth image for ${stockCode}`)
 
       // Önce "görsel hazırlanıyor" mesajı gönder
       const loadingMessage = await this.bot.sendMessage(
@@ -234,7 +234,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       }
 
       try {
-        // PNG görsel oluştur
+        // PNG görsel oluştur - Web safe fontlarla
         const pngBuffer = await ImageGenerator.generateDepthPNG(imageData)
 
         // Yükleme mesajını sil
@@ -257,7 +257,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
           parse_mode: "HTML",
         })
 
-        console.log(`✅ PNG depth image sent for ${stockCode}`)
+        console.log(`✅ Readable PNG depth image sent for ${stockCode}`)
       } catch (imageError) {
         console.error("PNG generation failed, falling back to table:", imageError)
 
