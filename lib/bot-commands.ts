@@ -173,7 +173,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       const keyboard = {
         inline_keyboard: [
           [
-            { text: "📊 Derinlik Görseli", callback_data: `derinlik_${stockCode}` },
+            { text: "🖼️ Derinlik Görseli", callback_data: `derinlik_${stockCode}` },
             { text: "📈 Teorik", callback_data: `teorik_${stockCode}` },
           ],
           [
@@ -228,30 +228,35 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         price: stockPrice.price,
         change: stockPrice.change,
         changePercent: stockPrice.changePercent,
-        bids: depthData.bids.slice(0, 25),
-        asks: depthData.asks.slice(0, 25),
+        bids: depthData.bids.slice(0, 20),
+        asks: depthData.asks.slice(0, 20),
         timestamp: new Date().toISOString(),
       }
 
-      // Profesyonel SVG görseli oluştur
-      const svgContent = await ImageGenerator.generateProfessionalDepthSVG(imageData)
-
-      // SVG'yi Buffer'a çevir
-      const svgBuffer = Buffer.from(svgContent, "utf-8")
+      // Profesyonel HTML görseli oluştur
+      const htmlContent = await ImageGenerator.generateProfessionalDepthHTML(imageData)
 
       // Yükleme mesajını sil
       await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
 
-      // SVG'yi document olarak gönder (Telegram SVG'yi destekler)
-      await this.bot.sendDocument(chatId, svgBuffer, {
-        filename: `${stockCode}_derinlik.svg`,
-        caption: `📊 <b>${stockCode.toUpperCase()} - Profesyonel Derinlik Tablosu</b>
+      // HTML içeriğini mesaj olarak gönder (geçici çözüm)
+      const caption = `🖼️ <b>${stockCode.toUpperCase()} - Profesyonel Derinlik Tablosu</b>
 
 💰 Mevcut: ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)
 
-<i>Son güncelleme: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}</i>`,
-        parse_mode: "HTML",
-      })
+🤖 <b>@BorsaAnaliz_Bot</b> - Anlık borsa verileri
+📊 25 kademe derinlik analizi
+⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}
+
+💡 <b>Diğer Komutlar:</b>
+• /teorik ${stockCode} - Teorik analiz
+• /temel ${stockCode} - Temel analiz  
+• /haber ${stockCode} - KAP haberleri`
+
+      await this.bot.sendMessage(chatId, caption)
+
+      // Tablo formatında da gönder
+      await this.getDepthTable(stockCode, chatId)
     } catch (error) {
       console.error(`Error generating professional depth image for ${stockCode}:`, error)
       await this.bot.sendMessage(
@@ -259,6 +264,68 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         `❌ ${stockCode} için profesyonel derinlik görseli oluşturulurken bir hata oluştu.`,
       )
     }
+  }
+
+  async getDepthTable(stockCode: string, chatId: number): Promise<void> {
+    try {
+      console.log(`Generating depth table for ${stockCode}`)
+
+      const depthData = await stockAPI.getMarketDepth(stockCode)
+      const stockPrice = await stockAPI.getStockPrice(stockCode)
+
+      if (!depthData || !stockPrice) {
+        await this.bot.sendMessage(chatId, `❌ ${stockCode} için derinlik verisi alınamadı.`)
+        return
+      }
+
+      // Profesyonel tablo formatı
+      let tableMessage = `📊 <b>${stockCode.toUpperCase()} - Derinlik Tablosu</b>
+
+💰 <b>Mevcut:</b> ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)
+
+<code>┌─────┬────────┬────────┬────────┬────────┬─────┐
+│ EMİR│  ADET  │  ALIŞ  │  SATIŞ │  ADET  │EMİR │
+├─────┼────────┼────────┼────────┼────────┼─────┤`
+
+      // İlk 15 seviye
+      for (let i = 0; i < Math.min(15, Math.max(depthData.bids.length, depthData.asks.length)); i++) {
+        const bid = depthData.bids[i]
+        const ask = depthData.asks[i]
+
+        const bidOrder = bid ? (i + 1).toString().padStart(4) : "    "
+        const bidQuantity = bid ? this.formatTableNumber(bid.quantity).padStart(7) : "       "
+        const bidPrice = bid ? bid.price.toFixed(2).padStart(7) : "       "
+        const askPrice = ask ? ask.price.toFixed(2).padStart(7) : "       "
+        const askQuantity = ask ? this.formatTableNumber(ask.quantity).padStart(7) : "       "
+        const askOrder = ask ? (i + 1).toString().padStart(4) : "    "
+
+        tableMessage += `
+│${bidOrder} │${bidQuantity}│${bidPrice}│${askPrice}│${askQuantity}│${askOrder} │`
+      }
+
+      tableMessage += `
+└─────┴────────┴────────┴────────┴────────┴─────┘</code>
+
+🤖 <b>@BorsaAnaliz_Bot</b> - Profesyonel Borsa Analizi
+⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}
+
+💡 <b>Diğer Analizler:</b>
+• /teorik ${stockCode} • /temel ${stockCode} • /haber ${stockCode}`
+
+      await this.bot.sendMessage(chatId, tableMessage)
+    } catch (error) {
+      console.error(`Error generating depth table for ${stockCode}:`, error)
+      await this.bot.sendMessage(chatId, `❌ ${stockCode} için derinlik tablosu oluşturulurken bir hata oluştu.`)
+    }
+  }
+
+  private formatTableNumber(num: number): string {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + "M"
+    } else if (num >= 1000) {
+      return (num / 1000).toFixed(0) + "K"
+    }
+    return num.toString()
   }
 
   async getTheoreticalAnalysis(stockCode: string): Promise<string> {
@@ -285,6 +352,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 • En Düşük: ${stockPrice.low.toFixed(2)} TL
 • Hacim: ${stockPrice.volume.toLocaleString()}
 
+🤖 <b>@BorsaAnaliz_Bot</b> - Profesyonel Analiz
 <i>Son güncelleme: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}</i>`
     } catch (error) {
       console.error(`Error getting theoretical analysis for ${stockCode}:`, error)
@@ -316,6 +384,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 • Piyasa Değeri: ${(companyInfo.marketCap / 1000000).toFixed(0)}M TL
 • Günlük Hacim: ${stockPrice.volume.toLocaleString()}
 
+🤖 <b>@BorsaAnaliz_Bot</b> - Temel Analiz
 <i>Son güncelleme: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}</i>`
     } catch (error) {
       console.error(`Error getting company fundamentals for ${stockCode}:`, error)
@@ -328,7 +397,9 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       const news = await stockAPI.getStockNews(stockCode)
 
       if (!news || news.length === 0) {
-        return `📰 ${stockCode} için güncel haber bulunamadı.`
+        return `📰 ${stockCode} için güncel haber bulunamadı.
+
+🤖 <b>@BorsaAnaliz_Bot</b> - Haber Servisi`
       }
 
       let message = `📰 <b>${stockCode.toUpperCase()} - Son Haberler</b>\n\n`
@@ -339,6 +410,8 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         message += `📅 ${date} | ${item.source}\n`
         message += `${item.content}\n\n`
       })
+
+      message += `🤖 <b>@BorsaAnaliz_Bot</b> - KAP Haberleri`
 
       return message
     } catch (error) {
@@ -354,13 +427,16 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       if (favorites.length === 0) {
         await this.bot.sendMessage(
           chatId,
-          "⭐ Henüz favori hisseniz yok.\n\n/favoriekle THYAO,AKBNK şeklinde hisse ekleyebilirsiniz.",
+          "⭐ Henüz favori hisseniz yok.\n\n/favoriekle THYAO,AKBNK şeklinde hisse ekleyebilirsiniz.\n\n🤖 <b>@BorsaAnaliz_Bot</b>",
         )
         return
       }
 
       const favoritesList = favorites.map((f: any) => f.stock_code).join(", ")
-      await this.bot.sendMessage(chatId, `⭐ <b>Favori Hisseleriniz:</b>\n\n${favoritesList}`)
+      await this.bot.sendMessage(
+        chatId,
+        `⭐ <b>Favori Hisseleriniz:</b>\n\n${favoritesList}\n\n🤖 <b>@BorsaAnaliz_Bot</b>`,
+      )
     } catch (error) {
       console.error(`Error handling favorites for user ${userId}:`, error)
       await this.bot.sendMessage(chatId, "❌ Favoriler alınırken bir hata oluştu.")
@@ -372,7 +448,10 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       for (const code of stockCodes) {
         await Database.addUserFavorite(userId, code.trim())
       }
-      await this.bot.sendMessage(chatId, `✅ ${stockCodes.join(", ")} favorilere eklendi.`)
+      await this.bot.sendMessage(
+        chatId,
+        `✅ ${stockCodes.join(", ")} favorilere eklendi.\n\n🤖 <b>@BorsaAnaliz_Bot</b>`,
+      )
     } catch (error) {
       console.error(`Error adding favorites for user ${userId}:`, error)
       await this.bot.sendMessage(chatId, "❌ Favori eklenirken hata oluştu.")
@@ -384,7 +463,10 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       for (const code of stockCodes) {
         await Database.removeUserFavorite(userId, code.trim())
       }
-      await this.bot.sendMessage(chatId, `✅ ${stockCodes.join(", ")} favorilerden çıkarıldı.`)
+      await this.bot.sendMessage(
+        chatId,
+        `✅ ${stockCodes.join(", ")} favorilerden çıkarıldı.\n\n🤖 <b>@BorsaAnaliz_Bot</b>`,
+      )
     } catch (error) {
       console.error(`Error removing favorites for user ${userId}:`, error)
       await this.bot.sendMessage(chatId, "❌ Favori çıkarılırken hata oluştu.")
@@ -394,7 +476,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
   async clearFavorites(userId: number, chatId: number) {
     try {
       await Database.clearUserFavorites(userId)
-      await this.bot.sendMessage(chatId, "✅ Tüm favoriler temizlendi.")
+      await this.bot.sendMessage(chatId, "✅ Tüm favoriler temizlendi.\n\n🤖 <b>@BorsaAnaliz_Bot</b>")
     } catch (error) {
       console.error(`Error clearing favorites for user ${userId}:`, error)
       await this.bot.sendMessage(chatId, "❌ Favoriler temizlenirken hata oluştu.")
