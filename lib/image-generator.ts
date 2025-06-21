@@ -13,7 +13,7 @@ export class ImageGenerator {
     try {
       const width = 800
       const height = 1000
-      
+
       // SVG başlangıcı
       let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -38,7 +38,7 @@ export class ImageGenerator {
         <!-- Başlık -->
         <text x="50" y="60" class="title">${data.symbol}</text>
         <text x="200" y="60" class="price">${data.price.toFixed(2)}₺</text>
-        <text x="350" y="60" class="${data.changePercent >= 0 ? 'change-positive' : 'change-negative'}">${data.changePercent >= 0 ? '+' : ''}${data.changePercent.toFixed(2)}%</text>
+        <text x="350" y="60" class="${data.changePercent >= 0 ? "change-positive" : "change-negative"}">${data.changePercent >= 0 ? "+" : ""}${data.changePercent.toFixed(2)}%</text>
         
         <!-- Tablo başlıkları -->
         <text x="50" y="120" class="header">EMİR</text>
@@ -84,7 +84,7 @@ export class ImageGenerator {
       // Alt bilgi
       const footerY = height - 100
       const timeText = new Date(data.timestamp).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })
-      
+
       svg += `
         <text x="50" y="${footerY}" class="footer">${data.symbol} Piyasa Derinliği</text>
         <text x="50" y="${footerY + 25}" class="timestamp">Son güncelleme: ${timeText}</text>
@@ -101,7 +101,7 @@ export class ImageGenerator {
   static async generateDepthHTML(data: DepthImageData): Promise<string> {
     try {
       const timeText = new Date(data.timestamp).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })
-      
+
       return `
         <!DOCTYPE html>
         <html>
@@ -217,30 +217,40 @@ export class ImageGenerator {
             <div class="header">
               <div class="symbol">${data.symbol}</div>
               <div class="price">${data.price.toFixed(2)}₺</div>
-              <div class="change ${data.changePercent >= 0 ? 'positive' : 'negative'}">
-                ${data.changePercent >= 0 ? '+' : ''}${data.changePercent.toFixed(2)}%
+              <div class="change ${data.changePercent >= 0 ? "positive" : "negative"}">
+                ${data.changePercent >= 0 ? "+" : ""}${data.changePercent.toFixed(2)}%
               </div>
             </div>
             
             <div class="depth-table">
               <div class="bids">
                 <div class="section-title">🟢 ALIŞ EMİRLERİ</div>
-                ${data.bids.slice(0, 15).map((bid, index) => `
+                ${data.bids
+                  .slice(0, 15)
+                  .map(
+                    (bid, index) => `
                   <div class="depth-row">
                     <span>${bid.price.toFixed(2)}</span>
                     <span>${bid.quantity.toLocaleString()}</span>
                   </div>
-                `).join('')}
+                `,
+                  )
+                  .join("")}
               </div>
               
               <div class="asks">
                 <div class="section-title">🔴 SATIŞ EMİRLERİ</div>
-                ${data.asks.slice(0, 15).map((ask, index) => `
+                ${data.asks
+                  .slice(0, 15)
+                  .map(
+                    (ask, index) => `
                   <div class="depth-row">
                     <span>${ask.price.toFixed(2)}</span>
                     <span>${ask.quantity.toLocaleString()}</span>
                   </div>
-                `).join('')}
+                `,
+                  )
+                  .join("")}
               </div>
             </div>
             
