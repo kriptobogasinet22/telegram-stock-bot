@@ -51,6 +51,8 @@ export class TurkishStockAPI {
   // Hisse fiyatı alma
   async getStockPrice(symbol: string): Promise<StockPrice | null> {
     try {
+      console.log(`📊 Getting stock price for ${symbol}`)
+
       // Önce CollectAPI dene
       if (this.collectAPIKey) {
         try {
@@ -62,22 +64,25 @@ export class TurkishStockAPI {
             },
           })
 
-          const data = await response.json()
+          if (response.ok) {
+            const data = await response.json()
 
-          if (data.success && data.result) {
-            const stock = data.result.find((item: any) => item.code.toUpperCase() === symbol.toUpperCase())
+            if (data.success && data.result) {
+              const stock = data.result.find((item: any) => item.code.toUpperCase() === symbol.toUpperCase())
 
-            if (stock) {
-              return {
-                symbol: symbol.toUpperCase(),
-                price: Number.parseFloat(stock.lastprice),
-                change: Number.parseFloat(stock.rate),
-                changePercent: Number.parseFloat(stock.rate.replace("%", "")),
-                volume: Number.parseInt(stock.volume || "0"),
-                high: Number.parseFloat(stock.maximum || "0"),
-                low: Number.parseFloat(stock.minimum || "0"),
-                open: Number.parseFloat(stock.opening || "0"),
-                close: Number.parseFloat(stock.lastprice),
+              if (stock) {
+                console.log(`✅ CollectAPI success for ${symbol}`)
+                return {
+                  symbol: symbol.toUpperCase(),
+                  price: Number.parseFloat(stock.lastprice),
+                  change: Number.parseFloat(stock.rate),
+                  changePercent: Number.parseFloat(stock.rate.replace("%", "")),
+                  volume: Number.parseInt(stock.volume || "0"),
+                  high: Number.parseFloat(stock.maximum || "0"),
+                  low: Number.parseFloat(stock.minimum || "0"),
+                  open: Number.parseFloat(stock.opening || "0"),
+                  close: Number.parseFloat(stock.lastprice),
+                }
               }
             }
           }
@@ -86,22 +91,39 @@ export class TurkishStockAPI {
         }
       }
 
-      // BigPara API'yi dene (API key gerektirmez)
+      // BigPara API'yi dene (API key gerektirmez) - GÜVENLI FETCH
       try {
-        const response = await fetch(`${this.bigParaAPI}/borsa/hisse/${symbol}`)
-        const data = await response.json()
+        console.log(`🔄 Trying BigPara API for ${symbol}`)
+        const response = await fetch(`${this.bigParaAPI}/borsa/hisse/${symbol}`, {
+          method: "GET",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (compatible; BorsaBot/1.0)",
+            Accept: "application/json",
+          },
+          signal: AbortSignal.timeout(5000), // 5 saniye timeout
+        })
 
-        if (data && data.data) {
-          return {
-            symbol: symbol.toUpperCase(),
-            price: Number.parseFloat(data.data.lastPrice || "0"),
-            change: Number.parseFloat(data.data.priceChange || "0"),
-            changePercent: Number.parseFloat(data.data.priceChangePercentage || "0"),
-            volume: Number.parseInt(data.data.volume || "0"),
-            high: Number.parseFloat(data.data.dayHigh || "0"),
-            low: Number.parseFloat(data.data.dayLow || "0"),
-            open: Number.parseFloat(data.data.open || "0"),
-            close: Number.parseFloat(data.data.lastPrice || "0"),
+        if (response.ok) {
+          const text = await response.text()
+          console.log(`📄 BigPara response length: ${text.length}`)
+
+          if (text.trim()) {
+            const data = JSON.parse(text)
+
+            if (data && data.data) {
+              console.log(`✅ BigPara API success for ${symbol}`)
+              return {
+                symbol: symbol.toUpperCase(),
+                price: Number.parseFloat(data.data.lastPrice || "0"),
+                change: Number.parseFloat(data.data.priceChange || "0"),
+                changePercent: Number.parseFloat(data.data.priceChangePercentage || "0"),
+                volume: Number.parseInt(data.data.volume || "0"),
+                high: Number.parseFloat(data.data.dayHigh || "0"),
+                low: Number.parseFloat(data.data.dayLow || "0"),
+                open: Number.parseFloat(data.data.open || "0"),
+                close: Number.parseFloat(data.data.lastPrice || "0"),
+              }
+            }
           }
         }
       } catch (error) {
@@ -109,6 +131,7 @@ export class TurkishStockAPI {
       }
 
       // Hiçbir API çalışmazsa mock data döndür
+      console.log(`🔄 Using mock data for ${symbol}`)
       return this.getMockStockPrice(symbol)
     } catch (error) {
       console.error(`Error fetching price for ${symbol}:`, error)
@@ -119,6 +142,7 @@ export class TurkishStockAPI {
   // Derinlik verisi alma
   async getMarketDepth(symbol: string): Promise<DepthData | null> {
     try {
+      console.log(`📊 Getting market depth for ${symbol}`)
       // Gerçek API'ler derinlik verisi sağlamıyor, mock data döndür
       return this.getMockDepthData(symbol)
     } catch (error) {
@@ -132,20 +156,28 @@ export class TurkishStockAPI {
     try {
       // BigPara API'den şirket bilgisi almaya çalış
       try {
-        const response = await fetch(`${this.bigParaAPI}/borsa/hisse/${symbol}/info`)
-        const data = await response.json()
+        const response = await fetch(`${this.bigParaAPI}/borsa/hisse/${symbol}/info`, {
+          signal: AbortSignal.timeout(5000),
+        })
 
-        if (data && data.data) {
-          return {
-            symbol: symbol.toUpperCase(),
-            name: data.data.title || symbol,
-            sector: data.data.sector || "Bilinmiyor",
-            marketCap: Number.parseFloat(data.data.marketCap || "0"),
-            peRatio: Number.parseFloat(data.data.pe || "0"),
-            pbRatio: Number.parseFloat(data.data.pb || "0"),
-            dividendYield: Number.parseFloat(data.data.dividendYield || "0"),
-            eps: Number.parseFloat(data.data.eps || "0"),
-            bookValue: Number.parseFloat(data.data.bookValue || "0"),
+        if (response.ok) {
+          const text = await response.text()
+          if (text.trim()) {
+            const data = JSON.parse(text)
+
+            if (data && data.data) {
+              return {
+                symbol: symbol.toUpperCase(),
+                name: data.data.title || symbol,
+                sector: data.data.sector || "Bilinmiyor",
+                marketCap: Number.parseFloat(data.data.marketCap || "0"),
+                peRatio: Number.parseFloat(data.data.pe || "0"),
+                pbRatio: Number.parseFloat(data.data.pb || "0"),
+                dividendYield: Number.parseFloat(data.data.dividendYield || "0"),
+                eps: Number.parseFloat(data.data.eps || "0"),
+                bookValue: Number.parseFloat(data.data.bookValue || "0"),
+              }
+            }
           }
         }
       } catch (error) {
