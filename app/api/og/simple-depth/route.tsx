@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     console.log("📊 Simple depth data:", { symbol, price, changePercent })
 
-    // ALWAYS use mock data for simplicity
+    // ALWAYS use mock data for simplicity - NO EXTERNAL DEPENDENCIES
     const bidsData = []
     const asksData = []
 
@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
 
     const changeColor = changePercent >= 0 ? "#00ff88" : "#ff4444"
 
+    // ULTRA SIMPLE DESIGN - GUARANTEED TO WORK
     return new ImageResponse(
       <div
         style={{
@@ -224,23 +225,33 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("❌ Simple Depth OG error:", error)
 
+    // VISIBLE ERROR RESPONSE
     return new ImageResponse(
       <div
         style={{
           height: "630px",
           width: "1200px",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
           background: "#ff4444",
           color: "white",
-          fontSize: "48px",
+          fontSize: "32px",
           fontWeight: "bold",
+          fontFamily: "system-ui",
+          padding: "40px",
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <div>❌ ERROR</div>
-          <div style={{ fontSize: "24px", marginTop: "20px" }}>Simple Depth Failed</div>
+          <div style={{ fontSize: "64px", marginBottom: "20px" }}>❌</div>
+          <div style={{ marginBottom: "20px" }}>SIMPLE DEPTH ERROR</div>
+          <div style={{ fontSize: "20px", marginBottom: "20px" }}>
+            {error instanceof Error ? error.message : "Unknown error"}
+          </div>
+          <div style={{ fontSize: "16px", background: "rgba(0,0,0,0.3)", padding: "10px", borderRadius: "8px" }}>
+            Check Vercel Function Logs
+          </div>
         </div>
       </div>,
       {
