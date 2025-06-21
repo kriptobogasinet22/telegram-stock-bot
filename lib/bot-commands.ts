@@ -177,7 +177,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
             { text: "📈 Teorik", callback_data: `teorik_${stockCode}` },
           ],
           [
-            { text: "🖼️ Derinlik Görseli", callback_data: `derinlik_gorsel_${stockCode}` },
+            { text: "🖼️ Derinlik Tablosu", callback_data: `derinlik_tablo_${stockCode}` },
             { text: "📋 Temel", callback_data: `temel_${stockCode}` },
           ],
           [
@@ -233,12 +233,12 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
     }
   }
 
-  async getDepthImage(stockCode: string, chatId: number): Promise<void> {
+  async getDepthTable(stockCode: string, chatId: number): Promise<void> {
     try {
-      console.log(`Generating depth image for ${stockCode}`)
+      console.log(`Generating depth table for ${stockCode}`)
 
-      // Önce "görsel hazırlanıyor" mesajı gönder
-      const loadingMessage = await this.bot.sendMessage(chatId, `🖼️ ${stockCode} derinlik görseli hazırlanıyor...`)
+      // Önce "tablo hazırlanıyor" mesajı gönder
+      const loadingMessage = await this.bot.sendMessage(chatId, `📊 ${stockCode} derinlik tablosu hazırlanıyor...`)
 
       const depthData = await stockAPI.getMarketDepth(stockCode)
       const stockPrice = await stockAPI.getStockPrice(stockCode)
@@ -252,7 +252,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         return
       }
 
-      // Görsel verilerini hazırla
+      // Tablo verilerini hazırla
       const imageData: DepthImageData = {
         symbol: stockCode.toUpperCase(),
         price: stockPrice.price,
@@ -263,20 +263,40 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         timestamp: new Date().toISOString(),
       }
 
-      // Görseli oluştur
-      const imageBuffer = await ImageGenerator.generateSimpleDepthImage(imageData)
+      // HTML tablosu oluştur
+      const htmlTable = await ImageGenerator.generateDepthHTML(imageData)
 
       // Yükleme mesajını sil
       await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
 
-      // Görseli gönder
-      await this.bot.sendPhoto(chatId, imageBuffer, {
-        caption: `📊 <b>${stockCode.toUpperCase()} - 25 Kademe Derinlik</b>\n\n💰 Mevcut: ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)\n\n<i>Son güncelleme: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}</i>`,
-        parse_mode: "HTML",
+      // HTML tablosunu mesaj olarak gönder (geçici çözüm)
+      let tableMessage = `📊 <b>${stockCode.toUpperCase()} - Derinlik Tablosu</b>\n\n`
+      tableMessage += `💰 <b>Mevcut:</b> ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)\n\n`
+      
+      tableMessage += `<b>🟢 ALIŞ EMİRLERİ</b>\n`
+      tableMessage += `<code>Fiyat    | Adet\n`
+      tableMessage += `---------|----------\n`
+      depthData.bids.slice(0, 10).forEach((bid) => {
+        const price = bid.price.toFixed(2).padEnd(8)
+        const quantity = bid.quantity.toLocaleString().padStart(8)
+        tableMessage += `${price} | ${quantity}\n`
       })
+      
+      tableMessage += `\n🔴 SATIŞ EMİRLERİ\n`
+      tableMessage += `Fiyat    | Adet\n`
+      tableMessage += `---------|----------\n`
+      depthData.asks.slice(0, 10).forEach((ask) => {
+        const price = ask.price.toFixed(2).padEnd(8)
+        const quantity = ask.quantity.toLocaleString().padStart(8)
+        tableMessage += `${price} | ${quantity}\n`
+      })
+      
+      tableMessage += `</code>\n\n<i>Son güncelleme: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}</i>`
+
+      await this.bot.sendMessage(chatId, tableMessage)
     } catch (error) {
-      console.error(`Error generating depth image for ${stockCode}:`, error)
-      await this.bot.sendMessage(chatId, `❌ ${stockCode} için derinlik görseli oluşturulurken bir hata oluştu.`)
+      console.error(`Error generating depth table for ${stockCode}:`, error)
+      await this.bot.sendMessage(chatId, `❌ ${stockCode} için derinlik tablosu oluşturulurken bir hata oluştu.`)
     }
   }
 
