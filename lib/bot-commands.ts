@@ -223,7 +223,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         message += `${index + 1}. ${bid.price.toFixed(2)} TL - ${bid.quantity.toLocaleString()}\n`
       })
 
-      message += `\n<i>Son güncelleme: ${new Date().toLocaleString("tr-TR")}</i>`
+      message += `\n<i>Son güncelleme: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}</i>`
 
       return message
     } catch (error) {
@@ -256,7 +256,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 • En Düşük: ${stockPrice.low.toFixed(2)} TL
 • Hacim: ${stockPrice.volume.toLocaleString()}
 
-<i>Son güncelleme: ${new Date().toLocaleString("tr-TR")}</i>`
+<i>Son güncelleme: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}</i>`
     } catch (error) {
       console.error(`Error getting theoretical analysis for ${stockCode}:`, error)
       return `❌ ${stockCode} için teorik analiz yapılırken bir hata oluştu.`
@@ -287,7 +287,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 • Piyasa Değeri: ${(companyInfo.marketCap / 1000000).toFixed(0)}M TL
 • Günlük Hacim: ${stockPrice.volume.toLocaleString()}
 
-<i>Son güncelleme: ${new Date().toLocaleString("tr-TR")}</i>`
+<i>Son güncelleme: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}</i>`
     } catch (error) {
       console.error(`Error getting company fundamentals for ${stockCode}:`, error)
       return `❌ ${stockCode} için temel analiz yapılırken bir hata oluştu.`
@@ -305,7 +305,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       let message = `📰 <b>${stockCode.toUpperCase()} - Son Haberler</b>\n\n`
 
       news.slice(0, 3).forEach((item, index) => {
-        const date = new Date(item.date).toLocaleDateString("tr-TR")
+        const date = new Date(item.date).toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" })
         message += `<b>${index + 1}. ${item.title}</b>\n`
         message += `📅 ${date} | ${item.source}\n`
         message += `${item.content}\n\n`
