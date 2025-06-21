@@ -11,9 +11,8 @@ export interface DepthImageData {
 export class VercelOGGenerator {
   static async generateDepthChart(data: DepthImageData): Promise<Buffer> {
     try {
-      console.log(`🎨 Generating Depth Chart for ${data.symbol}`)
+      console.log(`🎨 Generating Working Depth Chart for ${data.symbol}`)
 
-      // Hardcoded Vercel URL
       const baseUrl = "https://telegram-stock-bot-seven.vercel.app"
 
       const params = new URLSearchParams()
@@ -21,7 +20,7 @@ export class VercelOGGenerator {
       params.set("price", data.price.toString())
       params.set("changePercent", data.changePercent.toString())
 
-      const url = `${baseUrl}/api/og/simple-depth?${params.toString()}`
+      const url = `${baseUrl}/api/og/working-depth?${params.toString()}`
 
       console.log(`🚀 Fetching: ${url}`)
 
@@ -37,16 +36,16 @@ export class VercelOGGenerator {
       console.log(`📡 Response: ${response.status}`)
 
       if (!response.ok) {
-        throw new Error(`OG failed: ${response.status}`)
+        throw new Error(`Working depth failed: ${response.status}`)
       }
 
       const arrayBuffer = await response.arrayBuffer()
       const buffer = Buffer.from(arrayBuffer)
 
-      console.log(`✅ Chart generated: ${buffer.length} bytes`)
+      console.log(`✅ Working chart generated: ${buffer.length} bytes`)
       return buffer
     } catch (error) {
-      console.error("❌ Chart generation failed:", error)
+      console.error("❌ Working chart generation failed:", error)
       throw error
     }
   }
