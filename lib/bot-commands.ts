@@ -324,7 +324,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       }
 
       tableMessage += `
-╚═════╩════════╩════════╩════════╩════════╩═════╝</code>
+╚════��╩════════╩════════╩════════╩════════╩═════╝</code>
 
 🟢 <b>ALIŞ EMİRLERİ:</b> ${depthData.bids.length} kademe
 🔴 <b>SATIŞ EMİRLERİ:</b> ${depthData.asks.length} kademe
