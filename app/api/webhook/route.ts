@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       try {
         const welcomeMessage = `✅ <b>Katılma isteğiniz alındı!</b>
 
-Artık botu kullanabilirsiniz! İsteğiniz admin tarafından değerlendirilecek.
+Artık @borsaozelderinlik_bot'u kullanabilirsiniz!
 
 🚀 <b>Başlamak için:</b>
 • /start - Ana menü
@@ -63,7 +63,7 @@ Artık botu kullanabilirsiniz! İsteğiniz admin tarafından değerlendirilecek.
 <b>Popüler Komutlar:</b>
 • /derinlik THYAO
 • /temel AKBNK  
-• /haber GARAN`
+• /teknik GARAN`
 
         await bot.sendMessage(userId, welcomeMessage)
       } catch (error) {
@@ -88,22 +88,16 @@ Artık botu kullanabilirsiniz! İsteğiniz admin tarafından değerlendirilecek.
         await commands.checkMembership(userId, chatId)
       } else if (data.startsWith("derinlik_")) {
         const stockCode = data.replace("derinlik_", "")
-        await commands.getDepthImage(stockCode, chatId) // Bu artık sadece ASCII tablo gösterecek
+        await commands.getDepthAnalysis(stockCode, chatId)
       } else if (data.startsWith("teorik_")) {
         const stockCode = data.replace("teorik_", "")
-        const analysis = await commands.getTheoreticalAnalysis(stockCode)
-        await bot.sendMessage(chatId, analysis)
+        await commands.getTheoreticalAnalysis(stockCode, chatId)
       } else if (data.startsWith("temel_")) {
         const stockCode = data.replace("temel_", "")
-        const analysis = await commands.getCompanyFundamentals(stockCode)
-        await bot.sendMessage(chatId, analysis)
-      } else if (data.startsWith("haber_")) {
-        const stockCode = data.replace("haber_", "")
-        const news = await commands.getStockNews(stockCode)
-        await bot.sendMessage(chatId, news)
-      } else if (data.startsWith("favori_ekle_")) {
-        const stockCode = data.replace("favori_ekle_", "")
-        await commands.addFavorites(userId, chatId, [stockCode])
+        await commands.getFundamentalAnalysis(stockCode, chatId)
+      } else if (data.startsWith("teknik_")) {
+        const stockCode = data.replace("teknik_", "")
+        await commands.getTechnicalAnalysis(stockCode, chatId)
       } else if (data.startsWith("yenile_")) {
         const stockCode = data.replace("yenile_", "")
         await commands.handleStockCode(userId, chatId, stockCode)
@@ -142,49 +136,30 @@ Artık botu kullanabilirsiniz! İsteğiniz admin tarafından değerlendirilecek.
         await commands.handleStart(userId, chatId, message.from!)
       } else if (text.startsWith("/derinlik ")) {
         const stockCode = text.replace("/derinlik ", "").toUpperCase()
-        await commands.getDepthImage(stockCode, chatId) // ASCII tablo
+        await commands.getDepthAnalysis(stockCode, chatId)
       } else if (text.startsWith("/teorik ")) {
         const stockCode = text.replace("/teorik ", "").toUpperCase()
-        const analysis = await commands.getTheoreticalAnalysis(stockCode)
-        await bot.sendMessage(chatId, analysis)
+        await commands.getTheoreticalAnalysis(stockCode, chatId)
       } else if (text.startsWith("/temel ")) {
         const stockCode = text.replace("/temel ", "").toUpperCase()
-        const analysis = await commands.getCompanyFundamentals(stockCode)
-        await bot.sendMessage(chatId, analysis)
-      } else if (text.startsWith("/haber ")) {
-        const stockCode = text.replace("/haber ", "").toUpperCase()
-        const news = await commands.getStockNews(stockCode)
-        await bot.sendMessage(chatId, news)
-      } else if (text === "/favori" || text === "/favoriler") {
-        await commands.handleFavorites(userId, chatId)
-      } else if (text.startsWith("/favoriekle ")) {
-        const stockCodes = text.replace("/favoriekle ", "").split(",")
-        await commands.addFavorites(userId, chatId, stockCodes)
-      } else if (text.startsWith("/favoricikar ")) {
-        const stockCodes = text.replace("/favoricikar ", "").split(",")
-        await commands.removeFavorites(userId, chatId, stockCodes)
-      } else if (text === "/favorisifirla") {
-        await commands.clearFavorites(userId, chatId)
+        await commands.getFundamentalAnalysis(stockCode, chatId)
+      } else if (text.startsWith("/teknik ")) {
+        const stockCode = text.replace("/teknik ", "").toUpperCase()
+        await commands.getTechnicalAnalysis(stockCode, chatId)
       } else if (text.match(/^[A-Z0-9]{2,6}$/)) {
         // Stock code pattern
         await commands.handleStockCode(userId, chatId, text)
       } else {
-        const helpMessage = `🤖 <b>Borsa Analiz Botu - Komut Listesi</b>
+        const helpMessage = `🤖 <b>@borsaozelderinlik_bot - Komut Listesi</b>
 
-🔍 <b>Anlık Veriler</b>
-• /derinlik HISSE – 25 kademe derinlik
+🔍 <b>Analiz Komutları:</b>
+• /derinlik HISSE – Derinlik analizi
 • /teorik HISSE – Teorik analiz
 • /temel HISSE – Temel analiz
-• /haber HISSE – KAP haberleri
+• /teknik HISSE – Teknik analiz
 
-💹 <b>Favoriler</b>
-• /favori – Favori listesi
-• /favoriekle HISSE1,HISSE2 – Favori ekle
-• /favoricikar HISSE1,HISSE2 – Favori çıkar
-• /favorisifirla – Tümünü sil
-
-ℹ️ <b>Sadece hisse kodu gönderin!</b>
-Örnek: THYAO`
+💡 <b>Kullanım:</b> Sadece hisse kodu gönderin!
+Örnek: <code>THYAO</code>`
 
         await bot.sendMessage(chatId, helpMessage)
       }
@@ -199,10 +174,9 @@ Artık botu kullanabilirsiniz! İsteğiniz admin tarafından değerlendirilecek.
 
 export async function GET() {
   return NextResponse.json({
-    status: "✅ Webhook endpoint is working!",
+    status: "✅ @borsaozelderinlik_bot webhook working!",
     timestamp: new Date().toISOString(),
     botToken: process.env.TELEGRAM_BOT_TOKEN ? "✅ Token Set" : "❌ Token Missing",
     supabase: process.env.SUPABASE_URL ? "✅ Supabase Set" : "❌ Supabase Missing",
-    note: "OG generation disabled - ASCII tables only",
   })
 }
