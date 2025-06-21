@@ -30,15 +30,15 @@ export async function POST(request: NextRequest) {
     const bot = new TelegramBot(botToken)
     const commands = new BotCommands(bot)
 
-    // Handle join requests
+    // Handle join requests - SADECE KAYDET, MESAJ GÖNDERME!
     if (update.chat_join_request) {
       const { chat_join_request } = update
       const userId = chat_join_request.from.id
       const chatId = chat_join_request.chat.id
 
-      console.log(`📥 Join request from user ${userId} for chat ${chatId}`)
+      console.log(`📥 Join request from user ${userId} for chat ${chatId} - ONLY SAVING, NO MESSAGE`)
 
-      // Join request'i kaydet
+      // Sadece join request'i kaydet - mesaj gönderme!
       await Database.createJoinRequest({
         user_id: userId,
         chat_id: chatId,
@@ -48,28 +48,12 @@ export async function POST(request: NextRequest) {
         bio: chat_join_request.bio,
       })
 
-      // Kullanıcıyı aktif et - istek attığı anda botu kullanabilir
+      // Kullanıcıyı aktif et ama mesaj gönderme
       await Database.updateUserMembership(userId, true)
 
-      try {
-        const welcomeMessage = `✅ <b>Katılma isteğiniz alındı!</b>
+      console.log(`✅ Join request saved for user ${userId}, NO automatic message sent`)
 
-Artık @borsaozelderinlik_bot'u kullanabilirsiniz!
-
-🚀 <b>Başlamak için:</b>
-• /start - Ana menü
-• THYAO - Hisse analizi
-
-<b>Popüler Komutlar:</b>
-• /derinlik THYAO
-• /temel AKBNK  
-• /teknik GARAN`
-
-        await bot.sendMessage(userId, welcomeMessage)
-      } catch (error) {
-        console.error(`Failed to send welcome message to ${userId}:`, error)
-      }
-
+      // Hiçbir mesaj gönderme - kullanıcı manuel kontrol etsin
       return NextResponse.json({ ok: true })
     }
 
@@ -178,5 +162,6 @@ export async function GET() {
     timestamp: new Date().toISOString(),
     botToken: process.env.TELEGRAM_BOT_TOKEN ? "✅ Token Set" : "❌ Token Missing",
     supabase: process.env.SUPABASE_URL ? "✅ Supabase Set" : "❌ Supabase Missing",
+    note: "Join requests are saved silently - no automatic messages",
   })
 }
