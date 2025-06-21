@@ -13,39 +13,24 @@ export class VercelOGGenerator {
     try {
       console.log(`🎨 Generating Vercel OG PNG for ${data.symbol}`)
 
-      // URL oluşturma - daha güvenli
+      // Basit route kullan - /api/og (depth alt route'u yerine)
       const baseUrl = process.env.VERCEL_URL
         ? `https://${process.env.VERCEL_URL}`
         : process.env.NEXTAUTH_URL || "http://localhost:3000"
 
       console.log(`🌐 Base URL: ${baseUrl}`)
 
-      // Parametreleri encode et
+      // Minimal parametreler
       const params = new URLSearchParams()
       params.set("symbol", data.symbol)
       params.set("price", data.price.toString())
-      params.set("change", data.change.toString())
       params.set("changePercent", data.changePercent.toString())
       params.set("bidsCount", data.bids.length.toString())
       params.set("asksCount", data.asks.length.toString())
-      params.set("bestBid", data.bids[0]?.price.toString() || "0")
-      params.set("bestAsk", data.asks[0]?.price.toString() || "0")
-      params.set("timestamp", data.timestamp)
 
-      // JSON'ları güvenli şekilde encode et
-      try {
-        params.set("bids", JSON.stringify(data.bids.slice(0, 10)))
-        params.set("asks", JSON.stringify(data.asks.slice(0, 10)))
-      } catch (jsonError) {
-        console.error("JSON encoding error:", jsonError)
-        // Fallback data
-        params.set("bids", JSON.stringify([{ price: data.price - 0.05, quantity: 1000 }]))
-        params.set("asks", JSON.stringify([{ price: data.price + 0.05, quantity: 1000 }]))
-      }
+      const ogUrl = `${baseUrl}/api/og?${params.toString()}`
 
-      const ogUrl = `${baseUrl}/api/og/depth?${params.toString()}`
-
-      console.log(`🚀 Calling OG API: ${ogUrl.substring(0, 150)}...`)
+      console.log(`🚀 Calling simplified OG API: ${ogUrl}`)
 
       const response = await fetch(ogUrl, {
         method: "GET",
@@ -54,8 +39,8 @@ export class VercelOGGenerator {
           Accept: "image/png,image/*,*/*",
           "Cache-Control": "no-cache",
         },
-        // Timeout ekle
-        signal: AbortSignal.timeout(10000), // 10 saniye timeout
+        // Timeout
+        signal: AbortSignal.timeout(15000), // 15 saniye timeout
       })
 
       console.log(`📡 Response status: ${response.status}`)
@@ -86,17 +71,9 @@ export class VercelOGGenerator {
         throw new Error("PNG buffer is empty")
       }
 
-      // Buffer'ın gerçekten PNG olduğunu kontrol et
-      if (!buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
-        console.error("❌ Buffer is not a valid PNG")
-        throw new Error("Buffer is not a valid PNG")
-      }
-
       return buffer
     } catch (error) {
       console.error("❌ Vercel OG generation error:", error)
-
-      // Fallback: Basit text buffer döndür - Telegram bu durumda ASCII tablo gösterecek
       throw error // Error'u yukarı fırlat ki ASCII fallback çalışsın
     }
   }
