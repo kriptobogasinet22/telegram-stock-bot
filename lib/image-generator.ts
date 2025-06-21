@@ -9,64 +9,103 @@ export interface DepthImageData {
 }
 
 export class ImageGenerator {
-  static async generateDepthImageSVG(data: DepthImageData): Promise<string> {
+  static async generateProfessionalDepthSVG(data: DepthImageData): Promise<string> {
     try {
-      const width = 800
-      const height = 1000
+      const width = 400
+      const height = 600
 
-      // SVG başlangıcı
+      // Renk paleti
+      const colors = {
+        background: "#1a1a1a",
+        headerBg: "#2a2a2a",
+        tableBg: "#1e1e1e",
+        headerText: "#00d4ff",
+        priceText: "#ffffff",
+        changePositive: "#00ff88",
+        changeNegative: "#ff4444",
+        bidColor: "#00aa44",
+        askColor: "#dd3333",
+        borderColor: "#333333",
+        rowEven: "#252525",
+        rowOdd: "#1e1e1e",
+      }
+
       let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <style>
-            .bg { fill: #1a1a1a; }
-            .title { fill: #00d4ff; font-family: Arial, sans-serif; font-size: 32px; font-weight: bold; }
-            .price { fill: #ffffff; font-family: Arial, sans-serif; font-size: 28px; font-weight: bold; }
-            .change-positive { fill: #00ff88; font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; }
-            .change-negative { fill: #ff4444; font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; }
-            .header { fill: #666666; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; }
-            .bid { fill: #00aa44; font-family: Arial, sans-serif; font-size: 14px; }
-            .ask { fill: #dd3333; font-family: Arial, sans-serif; font-size: 14px; }
-            .footer { fill: #666666; font-family: Arial, sans-serif; font-size: 14px; }
-            .timestamp { fill: #888888; font-family: Arial, sans-serif; font-size: 12px; }
-            .brand { fill: #00d4ff; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; }
+            .bg { fill: ${colors.background}; }
+            .header-bg { fill: ${colors.headerBg}; }
+            .table-bg { fill: ${colors.tableBg}; }
+            .row-even { fill: ${colors.rowEven}; }
+            .row-odd { fill: ${colors.rowOdd}; }
+            .symbol { fill: ${colors.headerText}; font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; }
+            .price { fill: ${colors.priceText}; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; }
+            .change-pos { fill: ${colors.changePositive}; font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold; }
+            .change-neg { fill: ${colors.changeNegative}; font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold; }
+            .header-text { fill: ${colors.priceText}; font-family: 'Courier New', monospace; font-size: 10px; font-weight: bold; }
+            .bid-text { fill: ${colors.bidColor}; font-family: 'Courier New', monospace; font-size: 9px; }
+            .ask-text { fill: ${colors.askColor}; font-family: 'Courier New', monospace; font-size: 9px; }
+            .footer-text { fill: ${colors.headerText}; font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold; }
+            .border { stroke: ${colors.borderColor}; stroke-width: 1; fill: none; }
           </style>
         </defs>
         
-        <!-- Arka plan -->
+        <!-- Ana arka plan -->
         <rect width="${width}" height="${height}" class="bg"/>
         
-        <!-- Başlık -->
-        <text x="50" y="60" class="title">${data.symbol}</text>
-        <text x="200" y="60" class="price">${data.price.toFixed(2)}₺</text>
-        <text x="350" y="60" class="${data.changePercent >= 0 ? "change-positive" : "change-negative"}">${data.changePercent >= 0 ? "+" : ""}${data.changePercent.toFixed(2)}%</text>
+        <!-- Header arka plan -->
+        <rect x="0" y="0" width="${width}" height="50" class="header-bg"/>
+        <rect x="0" y="0" width="${width}" height="50" class="border"/>
+        
+        <!-- Başlık bilgileri -->
+        <text x="20" y="25" class="symbol">${data.symbol}</text>
+        <text x="100" y="25" class="price">${data.price.toFixed(2)}₺</text>
+        <text x="200" y="25" class="${data.changePercent >= 0 ? "change-pos" : "change-neg"}">${data.changePercent >= 0 ? "+" : ""}${data.changePercent.toFixed(2)}%</text>
+        
+        <!-- Tablo başlık arka planı -->
+        <rect x="0" y="50" width="${width}" height="25" class="table-bg"/>
+        <rect x="0" y="50" width="${width}" height="25" class="border"/>
         
         <!-- Tablo başlıkları -->
-        <text x="50" y="120" class="header">EMİR</text>
-        <text x="120" y="120" class="header">ADET</text>
-        <text x="200" y="120" class="header">ALIŞ</text>
-        <text x="320" y="120" class="header">SATIŞ</text>
-        <text x="400" y="120" class="header">ADET</text>
-        <text x="480" y="120" class="header">EMİR</text>
+        <text x="15" y="67" class="header-text">EMİR</text>
+        <text x="55" y="67" class="header-text">ADET</text>
+        <text x="120" y="67" class="header-text">ALIŞ</text>
+        <text x="180" y="67" class="header-text">SATIŞ</text>
+        <text x="240" y="67" class="header-text">ADET</text>
+        <text x="320" y="67" class="header-text">EMİR</text>
         
-        <!-- Çizgi -->
-        <line x1="50" y1="130" x2="550" y2="130" stroke="#333333" stroke-width="1"/>
+        <!-- Dikey çizgiler -->
+        <line x1="50" y1="50" x2="50" y2="${height - 30}" class="border"/>
+        <line x1="115" y1="50" x2="115" y2="${height - 30}" class="border"/>
+        <line x1="165" y1="50" x2="165" y2="${height - 30}" class="border"/>
+        <line x1="235" y1="50" x2="235" y2="${height - 30}" class="border"/>
+        <line x1="315" y1="50" x2="315" y2="${height - 30}" class="border"/>
       `
 
-      // Derinlik verilerini ekle
-      const startY = 150
-      const rowHeight = 25
+      // Tablo satırları
+      const startY = 75
+      const rowHeight = 18
       const maxRows = Math.min(25, Math.max(data.bids.length, data.asks.length))
 
-      for (let i = 0; i < maxRows; i++) {
+      for (let i = 0; i < maxRows && startY + i * rowHeight < height - 50; i++) {
         const y = startY + i * rowHeight
+        const isEven = i % 2 === 0
+
+        // Satır arka planı
+        svg += `<rect x="0" y="${y - 12}" width="${width}" height="${rowHeight}" class="${isEven ? "row-even" : "row-odd"}"/>`
+
+        // Yatay çizgi
+        if (i > 0) {
+          svg += `<line x1="0" y1="${y - 12}" x2="${width}" y2="${y - 12}" stroke="${colors.borderColor}" stroke-width="0.5"/>`
+        }
 
         // Alış emirleri (sol taraf)
         if (i < data.bids.length) {
           const bid = data.bids[i]
           svg += `
-            <text x="50" y="${y}" class="bid">${i + 1}</text>
-            <text x="120" y="${y}" class="bid">${bid.quantity.toLocaleString()}</text>
-            <text x="200" y="${y}" class="bid">${bid.price.toFixed(2)}</text>
+            <text x="15" y="${y}" class="bid-text">${i + 1}</text>
+            <text x="55" y="${y}" class="bid-text">${this.formatNumber(bid.quantity)}</text>
+            <text x="120" y="${y}" class="bid-text">${bid.price.toFixed(2)}</text>
           `
         }
 
@@ -74,28 +113,39 @@ export class ImageGenerator {
         if (i < data.asks.length) {
           const ask = data.asks[i]
           svg += `
-            <text x="320" y="${y}" class="ask">${ask.price.toFixed(2)}</text>
-            <text x="400" y="${y}" class="ask">${ask.quantity.toLocaleString()}</text>
-            <text x="480" y="${y}" class="ask">${i + 1}</text>
+            <text x="180" y="${y}" class="ask-text">${ask.price.toFixed(2)}</text>
+            <text x="240" y="${y}" class="ask-text">${this.formatNumber(ask.quantity)}</text>
+            <text x="320" y="${y}" class="ask-text">${i + 1}</text>
           `
         }
       }
 
-      // Alt bilgi
-      const footerY = height - 100
-      const timeText = new Date(data.timestamp).toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })
+      // Alt çerçeve
+      svg += `<rect x="0" y="${height - 30}" width="${width}" height="30" class="header-bg"/>`
+      svg += `<rect x="0" y="${height - 30}" width="${width}" height="30" class="border"/>`
 
-      svg += `
-        <text x="50" y="${footerY}" class="footer">${data.symbol} Piyasa Derinliği</text>
-        <text x="50" y="${footerY + 25}" class="timestamp">Son güncelleme: ${timeText}</text>
-        <text x="${width - 200}" y="${footerY}" class="brand">Borsa Analiz Bot</text>
-      </svg>`
+      // Footer
+      svg += `<text x="20" y="${height - 10}" class="footer-text">${data.symbol} Piyasa Derinliği</text>`
+
+      // Dış çerçeve
+      svg += `<rect x="0" y="0" width="${width}" height="${height}" class="border"/>`
+
+      svg += `</svg>`
 
       return svg
     } catch (error) {
-      console.error("Error generating SVG depth image:", error)
+      console.error("Error generating professional SVG depth image:", error)
       throw error
     }
+  }
+
+  static formatNumber(num: number): string {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + "M"
+    } else if (num >= 1000) {
+      return (num / 1000).toFixed(0) + "K"
+    }
+    return num.toLocaleString()
   }
 
   static async generateDepthHTML(data: DepthImageData): Promise<string> {
@@ -108,107 +158,88 @@ export class ImageGenerator {
         <head>
           <meta charset="UTF-8">
           <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
-              margin: 0;
-              padding: 20px;
-              background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-              font-family: 'Arial', sans-serif;
+              background: #1a1a1a;
+              font-family: 'Courier New', monospace;
               color: white;
-              width: 760px;
-              height: 960px;
+              width: 400px;
+              height: 600px;
+              overflow: hidden;
             }
             .container {
-              background: #1a1a1a;
-              border-radius: 10px;
-              padding: 30px;
-              box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+              width: 100%;
+              height: 100%;
+              border: 1px solid #333;
             }
             .header {
+              background: #2a2a2a;
+              padding: 15px 20px;
+              border-bottom: 1px solid #333;
               display: flex;
               align-items: center;
               gap: 20px;
-              margin-bottom: 30px;
-              padding-bottom: 20px;
-              border-bottom: 2px solid #333;
             }
             .symbol {
-              font-size: 36px;
+              font-size: 18px;
               font-weight: bold;
               color: #00d4ff;
             }
             .price {
-              font-size: 32px;
+              font-size: 16px;
               font-weight: bold;
               color: white;
             }
             .change {
-              font-size: 24px;
+              font-size: 14px;
               font-weight: bold;
-              padding: 5px 15px;
-              border-radius: 20px;
             }
-            .change.positive {
-              color: #00ff88;
-              background: rgba(0, 255, 136, 0.1);
-            }
-            .change.negative {
-              color: #ff4444;
-              background: rgba(255, 68, 68, 0.1);
-            }
-            .depth-table {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 30px;
-              margin: 30px 0;
-            }
-            .bids, .asks {
-              background: rgba(255,255,255,0.02);
-              border-radius: 8px;
-              padding: 20px;
-            }
-            .section-title {
-              font-size: 18px;
-              font-weight: bold;
-              margin-bottom: 15px;
-              padding-bottom: 10px;
-              border-bottom: 1px solid #333;
-            }
-            .bids .section-title {
-              color: #00aa44;
-            }
-            .asks .section-title {
-              color: #dd3333;
-            }
-            .depth-row {
-              display: flex;
-              justify-content: space-between;
+            .change.positive { color: #00ff88; }
+            .change.negative { color: #ff4444; }
+            
+            .table-header {
+              background: #1e1e1e;
               padding: 8px 0;
-              border-bottom: 1px solid rgba(255,255,255,0.05);
-              font-size: 14px;
-            }
-            .depth-row:last-child {
-              border-bottom: none;
-            }
-            .bids .depth-row {
-              color: #00aa44;
-            }
-            .asks .depth-row {
-              color: #dd3333;
-            }
-            .footer {
-              margin-top: 40px;
-              padding-top: 20px;
-              border-top: 1px solid #333;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              font-size: 14px;
-              color: #888;
-            }
-            .brand {
-              color: #00d4ff;
+              border-bottom: 1px solid #333;
+              display: grid;
+              grid-template-columns: 35px 60px 50px 50px 60px 35px;
+              gap: 5px;
+              font-size: 10px;
               font-weight: bold;
-              font-size: 16px;
+              text-align: center;
+            }
+            
+            .table-body {
+              height: calc(100% - 120px);
+              overflow: hidden;
+            }
+            
+            .table-row {
+              display: grid;
+              grid-template-columns: 35px 60px 50px 50px 60px 35px;
+              gap: 5px;
+              padding: 4px 0;
+              font-size: 9px;
+              text-align: center;
+              border-bottom: 0.5px solid #333;
+            }
+            
+            .table-row:nth-child(even) { background: #252525; }
+            .table-row:nth-child(odd) { background: #1e1e1e; }
+            
+            .bid { color: #00aa44; }
+            .ask { color: #dd3333; }
+            
+            .footer {
+              background: #2a2a2a;
+              padding: 8px 20px;
+              border-top: 1px solid #333;
+              font-size: 12px;
+              font-weight: bold;
+              color: #00d4ff;
+              position: absolute;
+              bottom: 0;
+              width: 100%;
             }
           </style>
         </head>
@@ -222,44 +253,35 @@ export class ImageGenerator {
               </div>
             </div>
             
-            <div class="depth-table">
-              <div class="bids">
-                <div class="section-title">🟢 ALIŞ EMİRLERİ</div>
-                ${data.bids
-                  .slice(0, 15)
-                  .map(
-                    (bid, index) => `
-                  <div class="depth-row">
-                    <span>${bid.price.toFixed(2)}</span>
-                    <span>${bid.quantity.toLocaleString()}</span>
+            <div class="table-header">
+              <div>EMİR</div>
+              <div>ADET</div>
+              <div>ALIŞ</div>
+              <div>SATIŞ</div>
+              <div>ADET</div>
+              <div>EMİR</div>
+            </div>
+            
+            <div class="table-body">
+              ${Array.from({ length: Math.min(25, Math.max(data.bids.length, data.asks.length)) }, (_, i) => {
+                const bid = data.bids[i]
+                const ask = data.asks[i]
+
+                return `
+                  <div class="table-row">
+                    <div class="bid">${bid ? i + 1 : ""}</div>
+                    <div class="bid">${bid ? this.formatNumber(bid.quantity) : ""}</div>
+                    <div class="bid">${bid ? bid.price.toFixed(2) : ""}</div>
+                    <div class="ask">${ask ? ask.price.toFixed(2) : ""}</div>
+                    <div class="ask">${ask ? this.formatNumber(ask.quantity) : ""}</div>
+                    <div class="ask">${ask ? i + 1 : ""}</div>
                   </div>
-                `,
-                  )
-                  .join("")}
-              </div>
-              
-              <div class="asks">
-                <div class="section-title">🔴 SATIŞ EMİRLERİ</div>
-                ${data.asks
-                  .slice(0, 15)
-                  .map(
-                    (ask, index) => `
-                  <div class="depth-row">
-                    <span>${ask.price.toFixed(2)}</span>
-                    <span>${ask.quantity.toLocaleString()}</span>
-                  </div>
-                `,
-                  )
-                  .join("")}
-              </div>
+                `
+              }).join("")}
             </div>
             
             <div class="footer">
-              <div>
-                <div>${data.symbol} Piyasa Derinliği</div>
-                <div>Son güncelleme: ${timeText}</div>
-              </div>
-              <div class="brand">Borsa Analiz Bot</div>
+              ${data.symbol} Piyasa Derinliği
             </div>
           </div>
         </body>
