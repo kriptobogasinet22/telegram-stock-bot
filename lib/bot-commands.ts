@@ -272,7 +272,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       // HTML tablosunu mesaj olarak gönder (geçici çözüm)
       let tableMessage = `📊 <b>${stockCode.toUpperCase()} - Derinlik Tablosu</b>\n\n`
       tableMessage += `💰 <b>Mevcut:</b> ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)\n\n`
-      
+
       tableMessage += `<b>🟢 ALIŞ EMİRLERİ</b>\n`
       tableMessage += `<code>Fiyat    | Adet\n`
       tableMessage += `---------|----------\n`
@@ -281,7 +281,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         const quantity = bid.quantity.toLocaleString().padStart(8)
         tableMessage += `${price} | ${quantity}\n`
       })
-      
+
       tableMessage += `\n🔴 SATIŞ EMİRLERİ\n`
       tableMessage += `Fiyat    | Adet\n`
       tableMessage += `---------|----------\n`
@@ -290,7 +290,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         const quantity = ask.quantity.toLocaleString().padStart(8)
         tableMessage += `${price} | ${quantity}\n`
       })
-      
+
       tableMessage += `</code>\n\n<i>Son güncelleme: ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}</i>`
 
       await this.bot.sendMessage(chatId, tableMessage)
