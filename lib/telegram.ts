@@ -130,6 +130,39 @@ export class TelegramBot {
     }
   }
 
+  async sendDocument(chatId: number | string, document: Buffer, options: any = {}) {
+    try {
+      console.log(`Sending document to ${chatId}`)
+
+      const formData = new FormData()
+      formData.append("chat_id", chatId.toString())
+      formData.append("document", new Blob([document], { type: "image/svg+xml" }), options.filename || "document.svg")
+
+      if (options.caption) {
+        formData.append("caption", options.caption)
+      }
+      if (options.parse_mode) {
+        formData.append("parse_mode", options.parse_mode)
+      }
+
+      const response = await fetch(`${this.baseUrl}/sendDocument`, {
+        method: "POST",
+        body: formData,
+      })
+
+      const result = await response.json()
+
+      if (!result.ok) {
+        console.error(`Failed to send document to ${chatId}:`, result.description)
+      }
+
+      return result
+    } catch (error) {
+      console.error(`Error sending document to ${chatId}:`, error)
+      throw error
+    }
+  }
+
   async editMessageText(chatId: number | string, messageId: number, text: string, options: any = {}) {
     try {
       const response = await fetch(`${this.baseUrl}/editMessageText`, {
