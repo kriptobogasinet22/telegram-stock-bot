@@ -253,7 +253,7 @@ export class TurkishStockAPI {
                 change: Number.parseFloat(bist100.change),
                 changePercent: Number.parseFloat(bist100.changePercentage.replace("%", "")),
                 volume: Number.parseInt(bist100.volume || "0"),
-                timestamp: new Date().toLocaleString("tr-TR"),
+                timestamp: new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" }),
               }
             }
           }
@@ -274,7 +274,7 @@ export class TurkishStockAPI {
             change: Number.parseFloat(data.data.priceChange || "0"),
             changePercent: Number.parseFloat(data.data.priceChangePercentage || "0"),
             volume: Number.parseInt(data.data.volume || "0"),
-            timestamp: new Date().toLocaleString("tr-TR"),
+            timestamp: new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" }),
           }
         }
       } catch (error) {
@@ -288,7 +288,7 @@ export class TurkishStockAPI {
         change: Math.random() * 100 - 50,
         changePercent: Math.random() * 2 - 1,
         volume: Math.floor(Math.random() * 1000000000),
-        timestamp: new Date().toLocaleString("tr-TR"),
+        timestamp: new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" }),
       }
     } catch (error) {
       console.error("Error fetching market summary:", error)
