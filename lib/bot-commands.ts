@@ -1,6 +1,7 @@
 import { Database } from "./database"
 import type { TelegramBot } from "./telegram"
 import { stockAPI } from "./stock-api"
+import { PuppeteerImageGenerator, type DepthImageData } from "./puppeteer-image-generator"
 
 export class BotCommands {
   private bot: TelegramBot
@@ -172,7 +173,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       const keyboard = {
         inline_keyboard: [
           [
-            { text: "📊 Derinlik Tablosu", callback_data: `derinlik_${stockCode}` },
+            { text: "🎭 Puppeteer Görsel", callback_data: `derinlik_${stockCode}` },
             { text: "📈 Teorik", callback_data: `teorik_${stockCode}` },
           ],
           [
@@ -201,19 +202,93 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 
   async getDepthImage(stockCode: string, chatId: number): Promise<void> {
     try {
-      console.log(`📊 Generating professional depth table for ${stockCode}`)
+      console.log(`🎭 Generating Puppeteer PNG depth image for ${stockCode}`)
 
-      // Direkt profesyonel tablo formatında gönder
-      await this.getDepthTable(stockCode, chatId)
+      // Önce "görsel hazırlanıyor" mesajı gönder
+      const loadingMessage = await this.bot.sendMessage(
+        chatId,
+        `🎭 ${stockCode} profesyonel derinlik görseli Puppeteer ile hazırlanıyor...
+
+⚡ HTML → Browser → PNG
+🎯 %100 Okunabilir Garantili!`,
+      )
+
+      const depthData = await stockAPI.getMarketDepth(stockCode)
+      const stockPrice = await stockAPI.getStockPrice(stockCode)
+
+      if (!depthData || !stockPrice) {
+        await this.bot.editMessageText(
+          chatId,
+          loadingMessage.result.message_id,
+          `❌ ${stockCode} için derinlik verisi alınamadı.`,
+        )
+        return
+      }
+
+      // Görsel verilerini hazırla
+      const imageData: DepthImageData = {
+        symbol: stockCode.toUpperCase(),
+        price: stockPrice.price,
+        change: stockPrice.change,
+        changePercent: stockPrice.changePercent,
+        bids: depthData.bids.slice(0, 22),
+        asks: depthData.asks.slice(0, 22),
+        timestamp: new Date().toISOString(),
+      }
+
+      try {
+        // Puppeteer ile PNG oluştur
+        const pngBuffer = await PuppeteerImageGenerator.generateDepthPNG(imageData)
+
+        // Yükleme mesajını sil
+        await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
+
+        // PNG'yi photo olarak gönder
+        await this.bot.sendPhoto(chatId, pngBuffer, {
+          caption: `🎭 <b>${stockCode.toUpperCase()} - PUPPETEER DERİNLİK GÖRSELİ</b>
+
+💰 <b>Mevcut:</b> ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)
+
+🎯 <b>Puppeteer teknolojisi</b> - %100 okunabilir!
+📊 22 kademe derinlik analizi
+⚡ HTML → Browser → PNG
+🎨 Google Fonts + CSS3 + Retina Quality
+
+📈 <b>En İyi Fiyatlar:</b>
+• 🟢 En Yüksek Alış: ${depthData.bids[0]?.price.toFixed(2)} ₺
+• 🔴 En Düşük Satış: ${depthData.asks[0]?.price.toFixed(2)} ₺
+• 📊 Spread: ${((depthData.asks[0]?.price || 0) - (depthData.bids[0]?.price || 0)).toFixed(2)} ₺
+
+💡 <b>Diğer Komutlar:</b>
+• /teorik ${stockCode} - Teorik analiz
+• /temel ${stockCode} - Temel analiz  
+• /haber ${stockCode} - KAP haberleri
+
+🤖 <b>@BorsaAnaliz_Bot</b> - Puppeteer PNG Teknolojisi
+⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}`,
+          parse_mode: "HTML",
+        })
+
+        console.log(`✅ Puppeteer PNG depth image sent for ${stockCode}`)
+      } catch (imageError) {
+        console.error("Puppeteer PNG generation failed, falling back to table:", imageError)
+
+        // Puppeteer oluşturulamazsa tablo formatında gönder
+        await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
+        await this.getDepthTable(stockCode, chatId)
+      }
     } catch (error) {
-      console.error(`Error generating depth table for ${stockCode}:`, error)
-      await this.bot.sendMessage(chatId, `❌ ${stockCode} için derinlik tablosu oluşturulurken bir hata oluştu.`)
+      console.error(`Error generating Puppeteer depth image for ${stockCode}:`, error)
+      await this.bot.sendMessage(
+        chatId,
+        `❌ ${stockCode} için Puppeteer derinlik görseli oluşturulurken bir hata oluştu.`,
+      )
     }
   }
 
   async getDepthTable(stockCode: string, chatId: number): Promise<void> {
     try {
-      console.log(`Generating enhanced depth table for ${stockCode}`)
+      console.log(`Generating depth table for ${stockCode}`)
 
       const depthData = await stockAPI.getMarketDepth(stockCode)
       const stockPrice = await stockAPI.getStockPrice(stockCode)
@@ -223,7 +298,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
         return
       }
 
-      // Ultra profesyonel tablo formatı - Renkli ve detaylı
+      // Ultra profesyonel tablo formatı
       let tableMessage = `📊 <b>${stockCode.toUpperCase()} - PİYASA DERİNLİĞİ</b>
 
 💰 <b>Mevcut Fiyat:</b> ${stockPrice.price.toFixed(2)} TL
@@ -234,7 +309,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 ║ EMİR║  ADET  ║  ALIŞ  ║  SATIŞ ║  ADET  ║EMİR ║
 ╠═════╬════════╬════════╬════════╬════════╬═════╣`
 
-      // İlk 20 seviye - Daha detaylı
+      // İlk 20 seviye
       for (let i = 0; i < Math.min(20, Math.max(depthData.bids.length, depthData.asks.length)); i++) {
         const bid = depthData.bids[i]
         const ask = depthData.asks[i]
@@ -261,13 +336,8 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 • En Düşük Satış: ${depthData.asks[0]?.price.toFixed(2)} TL
 • Spread: ${((depthData.asks[0]?.price || 0) - (depthData.bids[0]?.price || 0)).toFixed(2)} TL
 
-🤖 <b>@BorsaAnaliz_Bot</b> - Profesyonel Borsa Analizi
-⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}
-
-💡 <b>Diğer Komutlar:</b>
-• /teorik ${stockCode} - Teorik analiz
-• /temel ${stockCode} - Temel analiz  
-• /haber ${stockCode} - KAP haberleri`
+🤖 <b>@BorsaAnaliz_Bot</b> - Fallback Tablo (Puppeteer Yüklenemedi)
+⏰ ${new Date().toLocaleString("tr-TR", { timeZone: "Europe/Istanbul" })}`
 
       await this.bot.sendMessage(chatId, tableMessage)
     } catch (error) {
