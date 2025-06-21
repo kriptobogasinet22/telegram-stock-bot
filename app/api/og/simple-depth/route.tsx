@@ -5,89 +5,85 @@ export const runtime = "edge"
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("🎨 Simple Depth OG Route called!")
-
     const { searchParams } = new URL(request.url)
     const symbol = searchParams.get("symbol") || "THYAO"
     const price = Number.parseFloat(searchParams.get("price") || "25.50")
     const changePercent = Number.parseFloat(searchParams.get("changePercent") || "2.5")
 
-    console.log("📊 Simple depth data:", { symbol, price, changePercent })
+    // Mock data - basit array
+    const bids = []
+    const asks = []
 
-    // ALWAYS use mock data for simplicity - NO EXTERNAL DEPENDENCIES
-    const bidsData = []
-    const asksData = []
-
-    for (let i = 0; i < 12; i++) {
-      bidsData.push({
-        price: price - (i + 1) * 0.05,
-        quantity: Math.floor(Math.random() * 5000) + 1000,
+    for (let i = 0; i < 10; i++) {
+      bids.push({
+        price: (price - (i + 1) * 0.05).toFixed(2),
+        qty: Math.floor(Math.random() * 5000) + 1000,
       })
-      asksData.push({
-        price: price + (i + 1) * 0.05,
-        quantity: Math.floor(Math.random() * 5000) + 1000,
+      asks.push({
+        price: (price + (i + 1) * 0.05).toFixed(2),
+        qty: Math.floor(Math.random() * 5000) + 1000,
       })
     }
 
     const changeColor = changePercent >= 0 ? "#00ff88" : "#ff4444"
+    const changeSign = changePercent >= 0 ? "+" : ""
 
-    // ULTRA SIMPLE DESIGN - GUARANTEED TO WORK
     return new ImageResponse(
       <div
         style={{
-          height: "630px",
           width: "1200px",
+          height: "630px",
           display: "flex",
           flexDirection: "column",
-          background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
-          fontFamily: "system-ui",
+          backgroundColor: "#1a1a2e",
           color: "white",
-          padding: "40px",
+          fontFamily: "system-ui",
+          padding: "30px",
         }}
       >
-        {/* Title */}
+        {/* Header */}
         <div
           style={{
             display: "flex",
-            justifyContent: "center",
             alignItems: "center",
-            marginBottom: "30px",
-            background: "rgba(0, 0, 0, 0.8)",
-            border: "3px solid #00d4ff",
-            borderRadius: "20px",
-            padding: "20px",
+            justifyContent: "center",
+            marginBottom: "20px",
+            backgroundColor: "#000",
+            border: "2px solid #00d4ff",
+            borderRadius: "10px",
+            padding: "15px",
           }}
         >
           <div
             style={{
-              fontSize: "48px",
-              fontWeight: "900",
+              fontSize: "36px",
+              fontWeight: "bold",
               color: "#00d4ff",
-              marginRight: "30px",
+              marginRight: "20px",
             }}
           >
             {symbol}
           </div>
           <div
             style={{
-              fontSize: "36px",
-              fontWeight: "700",
-              marginRight: "20px",
+              fontSize: "28px",
+              fontWeight: "bold",
+              marginRight: "15px",
             }}
           >
             {price.toFixed(2)} TL
           </div>
           <div
             style={{
-              background: changeColor,
-              borderRadius: "12px",
-              padding: "10px 20px",
-              fontSize: "28px",
-              fontWeight: "700",
+              backgroundColor: changeColor,
+              borderRadius: "8px",
+              padding: "5px 15px",
+              fontSize: "20px",
+              fontWeight: "bold",
               color: "white",
             }}
           >
-            {changePercent >= 0 ? "+" : ""}
+            {changeSign}
             {changePercent.toFixed(2)}%
           </div>
         </div>
@@ -97,51 +93,51 @@ export async function GET(request: NextRequest) {
           style={{
             display: "flex",
             flex: 1,
-            gap: "30px",
-            background: "rgba(0, 0, 0, 0.5)",
-            border: "2px solid #333",
-            borderRadius: "20px",
-            padding: "30px",
+            gap: "20px",
+            backgroundColor: "rgba(0,0,0,0.5)",
+            borderRadius: "10px",
+            padding: "20px",
           }}
         >
           {/* Bids */}
           <div style={{ width: "45%" }}>
             <div
               style={{
-                fontSize: "24px",
-                fontWeight: "700",
+                fontSize: "18px",
+                fontWeight: "bold",
                 color: "#00ff88",
-                marginBottom: "20px",
                 textAlign: "center",
-                background: "rgba(0, 255, 136, 0.2)",
-                padding: "12px",
-                borderRadius: "10px",
+                marginBottom: "15px",
+                backgroundColor: "rgba(0,255,136,0.2)",
+                padding: "8px",
+                borderRadius: "5px",
               }}
             >
               ALIŞ EMİRLERİ
             </div>
 
-            {bidsData.slice(0, 10).map((bid, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "18px",
-                  padding: "8px 15px",
-                  background: "rgba(0, 255, 136, 0.1)",
-                  borderRadius: "6px",
-                  marginBottom: "4px",
-                  color: "#00ff88",
-                }}
-              >
-                <span style={{ fontWeight: "600" }}>{bid.price.toFixed(2)}</span>
-                <span>{formatNumber(bid.quantity)}</span>
-              </div>
-            ))}
+            <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+              {bids.map((bid, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "14px",
+                    padding: "5px 10px",
+                    backgroundColor: "rgba(0,255,136,0.1)",
+                    borderRadius: "3px",
+                    color: "#00ff88",
+                  }}
+                >
+                  <span>{bid.price}</span>
+                  <span>{bid.qty.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Center */}
+          {/* Center Line */}
           <div
             style={{
               width: "10%",
@@ -152,10 +148,10 @@ export async function GET(request: NextRequest) {
           >
             <div
               style={{
-                width: "6px",
-                height: "400px",
+                width: "3px",
+                height: "300px",
                 background: "linear-gradient(180deg, #00ff88 0%, #ff4444 100%)",
-                borderRadius: "3px",
+                borderRadius: "2px",
               }}
             />
           </div>
@@ -164,37 +160,38 @@ export async function GET(request: NextRequest) {
           <div style={{ width: "45%" }}>
             <div
               style={{
-                fontSize: "24px",
-                fontWeight: "700",
+                fontSize: "18px",
+                fontWeight: "bold",
                 color: "#ff4444",
-                marginBottom: "20px",
                 textAlign: "center",
-                background: "rgba(255, 68, 68, 0.2)",
-                padding: "12px",
-                borderRadius: "10px",
+                marginBottom: "15px",
+                backgroundColor: "rgba(255,68,68,0.2)",
+                padding: "8px",
+                borderRadius: "5px",
               }}
             >
               SATIŞ EMİRLERİ
             </div>
 
-            {asksData.slice(0, 10).map((ask, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "18px",
-                  padding: "8px 15px",
-                  background: "rgba(255, 68, 68, 0.1)",
-                  borderRadius: "6px",
-                  marginBottom: "4px",
-                  color: "#ff4444",
-                }}
-              >
-                <span>{formatNumber(ask.quantity)}</span>
-                <span style={{ fontWeight: "600" }}>{ask.price.toFixed(2)}</span>
-              </div>
-            ))}
+            <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+              {asks.map((ask, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "14px",
+                    padding: "5px 10px",
+                    backgroundColor: "rgba(255,68,68,0.1)",
+                    borderRadius: "3px",
+                    color: "#ff4444",
+                  }}
+                >
+                  <span>{ask.qty.toLocaleString()}</span>
+                  <span>{ask.price}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -204,16 +201,19 @@ export async function GET(request: NextRequest) {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginTop: "20px",
-            background: "linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)",
-            padding: "15px 30px",
-            borderRadius: "15px",
-            fontSize: "18px",
-            fontWeight: "600",
+            marginTop: "15px",
+            backgroundColor: "#00d4ff",
+            padding: "10px 20px",
+            borderRadius: "8px",
+            fontSize: "14px",
+            fontWeight: "bold",
             color: "#000",
           }}
         >
           <div>📊 PİYASA DERİNLİĞİ</div>
+          <div>
+            🟢 En İyi Alış: {bids[0].price} | 🔴 En İyi Satış: {asks[0].price}
+          </div>
           <div>{new Date().toLocaleTimeString("tr-TR")}</div>
         </div>
       </div>,
@@ -223,36 +223,21 @@ export async function GET(request: NextRequest) {
       },
     )
   } catch (error) {
-    console.error("❌ Simple Depth OG error:", error)
-
-    // VISIBLE ERROR RESPONSE
     return new ImageResponse(
       <div
         style={{
-          height: "630px",
           width: "1200px",
+          height: "630px",
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#ff4444",
+          backgroundColor: "#ff4444",
           color: "white",
           fontSize: "32px",
           fontWeight: "bold",
-          fontFamily: "system-ui",
-          padding: "40px",
         }}
       >
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "64px", marginBottom: "20px" }}>❌</div>
-          <div style={{ marginBottom: "20px" }}>SIMPLE DEPTH ERROR</div>
-          <div style={{ fontSize: "20px", marginBottom: "20px" }}>
-            {error instanceof Error ? error.message : "Unknown error"}
-          </div>
-          <div style={{ fontSize: "16px", background: "rgba(0,0,0,0.3)", padding: "10px", borderRadius: "8px" }}>
-            Check Vercel Function Logs
-          </div>
-        </div>
+        ERROR: {String(error)}
       </div>,
       {
         width: 1200,
@@ -260,13 +245,4 @@ export async function GET(request: NextRequest) {
       },
     )
   }
-}
-
-function formatNumber(num: number): string {
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + "M"
-  } else if (num >= 1000) {
-    return (num / 1000).toFixed(0) + "K"
-  }
-  return num.toString()
 }
