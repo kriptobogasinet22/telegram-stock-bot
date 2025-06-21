@@ -202,7 +202,7 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
 
   async getDepthImage(stockCode: string, chatId: number): Promise<void> {
     try {
-      console.log(`Generating SVG depth image for ${stockCode}`)
+      console.log(`🖼️ Generating PNG depth image for ${stockCode}`)
 
       // Önce "görsel hazırlanıyor" mesajı gönder
       const loadingMessage = await this.bot.sendMessage(
@@ -234,15 +234,14 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
       }
 
       try {
-        // SVG görsel oluştur
-        const svgBuffer = await ImageGenerator.generateDepthSVG(imageData)
+        // PNG görsel oluştur
+        const pngBuffer = await ImageGenerator.generateDepthPNG(imageData)
 
         // Yükleme mesajını sil
         await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
 
-        // SVG'yi document olarak gönder (Telegram SVG'yi resim olarak gösterir)
-        await this.bot.sendDocument(chatId, svgBuffer, {
-          filename: `${stockCode}_derinlik.svg`,
+        // PNG'yi photo olarak gönder (inline görünüm)
+        await this.bot.sendPhoto(chatId, pngBuffer, {
           caption: `📊 <b>${stockCode.toUpperCase()} - Profesyonel Derinlik Tablosu</b>
 
 💰 Mevcut: ${stockPrice.price.toFixed(2)} TL (${stockPrice.change > 0 ? "+" : ""}${stockPrice.changePercent.toFixed(2)}%)
@@ -258,11 +257,11 @@ Katılma isteğiniz mevcut, botu kullanabilirsiniz!
           parse_mode: "HTML",
         })
 
-        console.log(`✅ SVG depth image sent for ${stockCode}`)
+        console.log(`✅ PNG depth image sent for ${stockCode}`)
       } catch (imageError) {
-        console.error("SVG generation failed, falling back to table:", imageError)
+        console.error("PNG generation failed, falling back to table:", imageError)
 
-        // SVG oluşturulamazsa tablo formatında gönder
+        // PNG oluşturulamazsa tablo formatında gönder
         await this.bot.deleteMessage(chatId, loadingMessage.result.message_id)
         await this.getDepthTable(stockCode, chatId)
       }
