@@ -73,6 +73,10 @@ export async function POST(request: NextRequest) {
       } else if (data.startsWith("derinlik_")) {
         const stockCode = data.replace("derinlik_", "")
         await commands.getDepthAnalysis(stockCode, chatId)
+      } else if (data.startsWith("gorsel_")) {
+        // YENİ: Görsel derinlik analizi
+        const stockCode = data.replace("gorsel_", "")
+        await commands.getVisualDepthAnalysis(stockCode, chatId)
       } else if (data.startsWith("teorik_")) {
         const stockCode = data.replace("teorik_", "")
         await commands.getTheoreticalAnalysis(stockCode, chatId)
@@ -121,6 +125,10 @@ export async function POST(request: NextRequest) {
       } else if (text.startsWith("/derinlik ")) {
         const stockCode = text.replace("/derinlik ", "").toUpperCase()
         await commands.getDepthAnalysis(stockCode, chatId)
+      } else if (text.startsWith("/gorsel ")) {
+        // YENİ: /gorsel HISSE komutu
+        const stockCode = text.replace("/gorsel ", "").toUpperCase()
+        await commands.getVisualDepthAnalysis(stockCode, chatId)
       } else if (text.startsWith("/teorik ")) {
         const stockCode = text.replace("/teorik ", "").toUpperCase()
         await commands.getTheoreticalAnalysis(stockCode, chatId)
@@ -137,7 +145,8 @@ export async function POST(request: NextRequest) {
         const helpMessage = `🤖 <b>@borsaozelderinlik_bot - Komut Listesi</b>
 
 🔍 <b>Analiz Komutları:</b>
-• /derinlik HISSE – Derinlik analizi
+• /derinlik HISSE – Tablo derinlik analizi
+• /gorsel HISSE – Görsel derinlik analizi
 • /teorik HISSE – Teorik analiz
 • /temel HISSE – Temel analiz
 • /teknik HISSE – Teknik analiz
@@ -163,5 +172,6 @@ export async function GET() {
     botToken: process.env.TELEGRAM_BOT_TOKEN ? "✅ Token Set" : "❌ Token Missing",
     supabase: process.env.SUPABASE_URL ? "✅ Supabase Set" : "❌ Supabase Missing",
     note: "Join requests are saved silently - no automatic messages",
+    features: "✅ Visual depth charts enabled",
   })
 }
