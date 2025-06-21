@@ -266,16 +266,6 @@ export async function GET(request: NextRequest) {
             style: "normal",
             weight: 400,
           },
-          {
-            name: "Inter",
-            data: await fetch(
-              new URL(
-                "https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyeMZhrib2Bg-4.woff2",
-              ),
-            ).then((res) => res.arrayBuffer()),
-            style: "normal",
-            weight: 700,
-          },
         ],
       },
     )
